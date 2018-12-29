@@ -1,8 +1,9 @@
 Data was obtained from:
           https://www.census.gov/cgi-bin/geo/shapefiles/index.php?year=2018&layergroup=Roads
           
-Files are named StateFipsCode-interstate.json
-					 StateFipsCode-interstate-labels.json
+Files are named :
+	StateFipsCode-interstate.json
+	StateFipsCode-interstate-labels.json
 
 The labels are seperate because they use centroid cordinates and are consolidated
 					 
