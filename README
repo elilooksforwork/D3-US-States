@@ -1,9 +1,15 @@
 Data was obtained from:
           https://www.census.gov/cgi-bin/geo/shapefiles/index.php?year=2018&layergroup=Roads
           
+Files are named StateFipsCode-interstate.json
+					 StateFipsCode-interstate-labels.json
+
+The labels are seperate because they use centroid cordinates and are consolidated
+					 
 I converted it to JSON data ustilizing OSGeo.OGR library and simplified data with Simplify(0.001);
 
 The maps load a tad slower than MaPBox, and I noticed the data from Tiger/Line seems to have a 
-lot of difference in names and coordinates than MapBox; loot at Alabama and Mississippi's I-22, and 
-you will see a big chucnk of highway missing. I tested this prior to simplifying the geometries, 
-and it yielded the same result.
+lot of difference in names and coordinates than MapBox; look at Alabama and Mississippi's I-22, and you will see a big chucnk of highway missing. I tested this prior to simplifying the geometries, and it yielded the same result.
+
+What I did to remedy this is change US Hwy 78 to I- 22 US Hwy 78
+
