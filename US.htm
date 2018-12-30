@@ -1,0 +1,577 @@
+﻿
+<!doctype html>
+<html>
+<head>
+	<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Amatic+SC|Cinzel|Crimson+Text|Libre+Franklin|Rancho&effect=shadow-multiple|3d-float">
+    <style type="text/css">
+        body{
+			font-family: "Cinzel";
+			font-size:18px;
+			padding:15px;
+			margin: 0 auto;
+            background-color:#464646;
+            user-select: none;
+            -moz-user-select: none;
+            -webkit-user-select: none;
+        }
+		.cityList{
+			font-family:'Libre Franklin';
+			font-size:16px;
+			cursor:pointer;
+		}
+		.cityList.active {
+			color: #f4ba51;
+			text-decoration: none;
+			font-weight:900;
+		}
+		.county-boundary {
+			fill: #333;
+			stroke: #000;
+			stroke-opacity:1;
+			stroke-width: .0125em;
+			pointer-events: all;
+		}
+		path {
+			fill-opacity: 1;
+			stroke-opacity: 1;
+			stroke-width:1;
+            cursor:pointer;
+			pointer-events: all;
+		}
+		path:hover {
+			fill-opacity: .4;
+			pointer-events: all;
+		}
+		div.tooltip { 
+			position: absolute;
+			color: #ffffff;
+			background-color:#494949;
+			min-width: 45px!important;
+			height: 18px;
+			padding-left: 12px;
+			padding-right: 12px;
+			font-family: 12px Cinzel;
+			border: 1px solid #000000;
+	        border-radius:5px;
+			pointer-events: none;
+			z-index:9999;
+		}
+		#divMain{
+            width:100%;
+            height:100%;
+			color:#ffffff;
+	        background-color: #736962;
+	        border: solid 1px #555;
+            border-radius: 15px;
+        }
+        .left
+        {
+            float:left;
+            width:40%;
+            height:400px;
+			font-size:16px;
+        }
+        .right
+        {
+            float:left;
+            width:59%;
+            height:auto;
+        }
+		.state {
+			pointer-events: all;
+			stroke-opacity:0.4;
+			stroke-width: .0125em;
+
+		}
+		.state-borders {
+			fill: none;
+			stroke: #fff;
+			stroke-opacity:0.4;
+			stroke-width: .0125em;
+			stroke-linejoin: round;
+			stroke-linecap: round;
+			pointer-events: none;
+		}
+		text {
+			fill-opacity: 1;
+            cursor:pointer;
+		}
+	</style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	<script src="https://d3js.org/d3.v4.min.js"></script>
+	<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+	<script src="https://d3js.org/topojson.v2.min.js"></script>	
+	<script>
+		let gGroupPoints	= null;
+		let gActiveState	= null;
+		let	gGeoPath		= null;
+		let gProjection		= null;
+		let gCitiesInState	= {};
+		let ___gSVG			= null;	
+		let gStates			= {};
+		let gWidth			= 960,
+			gHeight			= 600;
+		let gCountiesAll	= {};
+		gStates["01"] = "AL";
+		gStates["02"] = "AK";
+		gStates["04"] = "AZ";
+		gStates["05"] = "AR";
+		gStates["06"] = "CA";
+		gStates["08"] = "CO";
+		gStates["09"] = "CT";
+		gStates["10"] = "DE";
+		gStates["11"] = "DC";
+		gStates["12"] = "FL";
+		gStates["13"] = "GA";
+		gStates["15"] = "HI";
+		gStates["16"] = "ID";
+		gStates["17"] = "IL";
+		gStates["18"] = "IN";
+		gStates["19"] = "IA";
+		gStates["20"] = "KS";
+		gStates["21"] = "KY";
+		gStates["22"] = "LA";
+		gStates["23"] = "ME";
+		gStates["24"] = "MD";
+		gStates["25"] = "MA";
+		gStates["26"] = "MI";
+		gStates["27"] = "MN";
+		gStates["29"] = "MO";
+		gStates["28"] = "MS";
+		gStates["30"] = "MT";
+		gStates["31"] = "NE";
+		gStates["32"] = "NV";
+		gStates["33"] = "NH";
+		gStates["34"] = "NJ";
+		gStates["35"] = "NM";
+		gStates["36"] = "NY";
+		gStates["37"] = "NC";
+		gStates["38"] = "ND";
+		gStates["39"] = "OH";
+		gStates["40"] = "OK";
+		gStates["41"] = "OR";
+		gStates["42"] = "PA";
+		gStates["44"] = "RI";
+		gStates["45"] = "SC";
+		gStates["46"] = "SD";
+		gStates["47"] = "TN";
+		gStates["48"] = "TX";
+		gStates["49"] = "UT";
+		gStates["51"] = "VA";
+		gStates["50"] = "VT";
+		gStates["53"] = "WA";
+		gStates["55"] = "WI";
+		gStates["54"] = "WV";
+		gStates["56"] = "WY";
+        function checkSize() {
+            if ($(window).width() <= 620) {
+                $("#divMain").css("float", "left");
+                $("#divMap").css("float", "left");
+                //$("#divMap").css("margin-left","-100px");
+                $(document.body).css("width", "300px");
+                $("#divMain").css("width", "300px");
+                $(".left").css("float", "left");
+                $(".right").css("float", "left");
+				$(".left").css("width","300px");
+				$(".left").css("height","150px");
+				$("#divCities").css("height","130px");
+				$(".right").css("width","300px");
+                $("#divMap").css("zoom", "0.3");
+                $("#divMap").css("-moz-transform", "scale(0.3)");
+            } else if ($(window).width() >= 800) {
+                $(document.body).css("width", "800px");
+                $("#divMain").css("width", "800px");
+                $("#divMain").css("display", "table");
+                $("#divMain").css("float", "");
+                $("#divMap").css("zoom", "0.6");
+                $("#divMap").css("-moz-transform", "scale(0.6)");
+				$(".left").css("width","200px");
+				$(".left").css("height","400px");
+				$("#divCities").css("height","350px");
+				$(".right").css("width","550px");
+            }
+        }
+		function fxReset(sState) {
+			var grpCnty = d3.select("#US_" + sState + "_COUNTIES");
+			grpCnty.selectAll('path').remove();
+			var grpStateBtn = d3.select("#BTN_" + sState);
+			grpStateBtn.style("opacity", 1);
+			var tooltip = d3.select(".tooltip");
+			tooltip.style("opacity", 0);
+			var grpMapLines = d3.select("#groupMapLines")	
+			grpMapLines.transition()
+			.duration(850).style("opacity", 1);
+			
+			___gSVG.attr("transform", "");
+			//gActiveState = d3.select(null);
+			var g = d3.select("#groupMapAll")
+			g.transition()
+			.duration(750)
+			.style("stroke-width", "1.5px")
+			.attr("transform", "");
+		}
+		function onMouseDown(obj, ctrl){
+			var sState		= gStates[obj.id];
+			if (gActiveState && gActiveState.node() === obj){
+				return fxReset(sState);
+			} else if (gActiveState && gActiveState.node() && gActiveState.node().id != undefined){
+				var tmpState = gStates[gActiveState.node().id];
+				var grpCnty = d3.select("#US_" + tmpState + "_COUNTIES");
+				grpCnty.selectAll('path').remove();
+				var grpStateBtn = d3.select("#BTN_" + tmpState);
+				grpStateBtn.style("opacity", 1);
+			}
+			var sStateFIP	= obj.id.substr(0,2);
+			var grpMapLines = d3.select("#groupMapLines")	
+			grpMapLines.style("opacity", 0);
+			var grpStateBtn = d3.select("#BTN_" + sState);
+			grpStateBtn.style("opacity", 0);
+			var grpCnty = d3.select("#US_" + sState + "_COUNTIES");
+			var tooltip = d3.select(".tooltip");
+			gActiveState = d3.select(obj);
+			var bounds	= gGeoPath.bounds(obj),
+			dx			= bounds[1][0] - bounds[0][0],
+			dy			= bounds[1][1] - bounds[0][1],
+			x			= (bounds[0][0] + bounds[1][0]) / 2,
+			y			= (bounds[0][1] + bounds[1][1]) / 2,
+			scale		= .9/ Math.max(dx / gWidth, dy / gHeight),
+			translate	= [(gWidth/2) - (scale * x), (gHeight/2) - (scale * y)];
+			var g = d3.select("#groupMapAll");
+			g.transition()
+			.duration(750)
+			.style("stroke-width", 1.5 / scale + "px")
+			.attr("transform", "translate(" + translate + ")scale(" + scale + ")");
+				
+			gGroupPoints.selectAll('circle').remove();
+			if(sState && sState != undefined){
+				var sCities = gCitiesInState[sState].cityData;
+				if(sCities != undefined){
+					arrCities = sCities.split(",");
+					var sHTML = "<h4 style=\"padding-left:5px;cursor:pointer;\" onclick=\"fxReset('" + sState + "');\">" + sState + "</h4><ul>";
+					for (var i = 0; i < arrCities.length; i++) {
+						var objCity = arrCities[i].split("|");
+						if(objCity[0] != "")
+							sHTML += "<li class=\"cityList\" onclick=\"placeLonLat(this,'" + ctrl.id + "');\" data-lon=\"" + objCity[1] + "\" data-lat=\"" + objCity[2] + "\">" + objCity[0]  + "</li>";
+					}
+					sHTML += "<ul>";
+					$("#divCities").empty().append(sHTML);
+				} else {
+					$("#divCities").empty();
+				}
+			}
+			var crect	= ctrl.getBoundingClientRect();
+			d3.json("us-states-10.json", function(error, us) {
+				if (error){
+					alert(error);
+					throw error;
+				}
+    			grpCnty.selectAll("path")
+				.data(topojson.feature(us, us.objects.counties).features)
+				.enter()
+				.filter(function(d){
+					var sTest = String(d.id).substr(0,2);
+					if(sTest == sStateFIP){
+						return true;
+					} else{
+						return false;
+					}
+				})
+				.append("path")
+				.attr("d", gGeoPath)
+				.attr("class", "county-boundary")
+				.style("opacity", 1)
+				.on("mouseover", function(d) {    
+					if(gCountiesAll[d.id] != undefined){
+						var sCounty = gCountiesAll[d.id].replace("\n"," "); 
+						tooltip.html(sCounty);
+						tooltip.style("height", "21px");
+						tooltip.transition()    
+						.duration(30)
+						.style("opacity", .9)
+						.style("left", (d3.event.pageX) + "px")
+						.style("top", function(){
+							if((d3.event.pageY-9) < crect.y){
+								return ((d3.event.pageY + 9) + "px");
+							} else {
+								return ((d3.event.pageY - 9) + "px");
+							}
+						})
+					} else{
+						tooltip.style("opacity", 0);
+					}
+				})          
+				.on("mouseout", function(d) {   
+					tooltip.style("opacity", 0); 
+				});				
+			});
+		}
+		function placeLonLat(ctrl,id){
+			var sState	= id.replace("US_","");
+			var lon		= $(ctrl).attr("data-lon");
+			var lat		= $(ctrl).attr("data-lat");
+			gGroupPoints.selectAll('circle').remove();
+			$(".cityList").each(function () {
+				$(this).removeClass("active");
+			});
+			$(ctrl).addClass("active");
+			gGroupPoints.selectAll("text")
+				.data([lon, lat])
+				.enter()
+				.append("circle")
+				.attr("cx", function(d) {
+					return gProjection([lon, lat])[0];
+				})
+				.attr("cy", function(d) {
+					return gProjection([lon, lat])[1];
+				})
+				.attr("r", function(d) {
+					return 2;
+				})
+				.style("fill", "rgb(255,255,255)")
+				.style("opacity", 1);
+		}
+		function contrastColor(sColor) {
+			let r,g,b = -1;
+			if(sColor.indexOf('rgb') != -1){
+				sColor = sColor.split("(")[1].split(")")[0];
+				var a = sColor.split(",");
+				r = parseInt(a[0]);
+				b = parseInt(a[1]);
+				g = parseInt(a[2]);
+			} else if (sColor.indexOf('#') === 0) {
+				sColor = sColor.slice(1);
+				r = parseInt(sColor.substr(0,2),16);
+				g = parseInt(sColor.substr(2,2),16);
+				b = parseInt(sColor.substr(4,2),16);
+			}
+			var yiq = ((r*299)+(g*587)+(b*114))/1000;
+			return (yiq >= 128 ? 'rgb(0,0,0)' : 'rgb(255,255,255)');
+		}
+		function getRandomColor() {
+			return '#'+Math.random().toString(16).substr(-6);
+		}
+        gCitiesInState["AK"]= {"cityData": ", Anchorage|-149.86313|61.21738, Denali Park|-148.71070|63.59090, Juneau|-134.17760|58.45660", "countyData": "Aleutians West|02016,Kodiak Island|02150,Bethel|02050,Aleutians East|02013,Kusilvak|02158,Yukon-Koyukuk|02290,Dillingham|02070,Northwest Arctic|02188,North Slope|02185,Kenai Peninsula|02122,Anchorage|02020,Denali|02068,Hoonah-Angoon|02105,Juneau|02110,Fairbanks North Star|02090,Southeast Fairbanks|02240,Matanuska-Susitna|02170,Nome|02180,Lake and Peninsula|02164,Valdez-Cordova|02261,Prince of Wales-Hyder|02198,Haines|02100,Petersburg Borough|02195,Ketchikan Gateway|02130,Bristol Bay|02060,Wrangell|02275,Sitka|02220,Skagway|02230,Yakutat|02282"};gCitiesInState["AL"]= {"cityData": ", Birmingham|-86.79860|33.52760, Huntsville|-86.64120|34.69900, Mobile|-88.11610|30.67820, Montgomery|-86.26630|32.34700, Orange Beach|-87.58510|30.29410, Perdido Beach|-87.50410|30.35550", "countyData": "Chambers|01017,Henry|01067,Bullock|01011,Tuscaloosa|01125,Jefferson|01073,Winston|01133,Hale|01065,Shelby|01117,Wilcox|01131,Marshall|01095,Tallapoosa|01123,Calhoun|01015,Pickens|01107,Blount|01009,Etowah|01055,Covington|01039,Lauderdale|01077,Pike|01109,Limestone|01083,Dale|01045,Cullman|01043,Bibb|01007,Houston|01069,Clay|01027,St. Clair|01115,Escambia|01053,Lee|01081,Autauga|01001,Mobile|01097,Barbour|01005,Colbert|01033,Baldwin|01003,Fayette|01057,Marion|01093,Monroe|01099,Lamar|01075,Franklin|01059,Sumter|01119,Lowndes|01085,Geneva|01061,Cherokee|01019,Elmore|01051,Greene|01063,Butler|01013,Talladega|01121,Cleburne|01029,Crenshaw|01041,Jackson|01071,Conecuh|01035,Dallas|01047,Choctaw|01023,Clarke|01025,Walker|01127,Montgomery|01101,Madison|01089,Washington|01129,Chilton|01021,DeKalb|01049,Lawrence|01079,Russell|01113,Marengo|01091,Morgan|01103,Coffee|01031,Macon|01087,Coosa|01037,Randolph|01111,Perry|01105"};gCitiesInState["AR"]= {"cityData": ", Little Rock|-92.35840|34.72550", "countyData": "Scott|05127,Perry|05105,Fulton|05049,Madison|05087,Stone|05137,Pulaski|05119,Lawrence|05075,Franklin|05047,Little River|05081,Lonoke|05085,Crawford|05033,Cleburne|05023,Arkansas|05001,Boone|05009,Clark|05019,Jefferson|05069,Jackson|05067,Ouachita|05103,Crittenden|05035,Pike|05109,Pope|05115,Baxter|05005,Desha|05041,Mississippi|05093,Sharp|05135,Columbia|05027,Lee|05077,Woodruff|05147,Saline|05125,Benton|05007,White|05145,Bradley|05011,Sebastian|05131,Phillips|05107,Independence|05063,Craighead|05031,Carroll|05015,Van Buren|05141,Grant|05053,Yell|05149,Newton|05101,Sevier|05133,Polk|05113,Randolph|05121,Hempstead|05057,Prairie|05117,Hot Spring|05059,Montgomery|05097,Monroe|05095,Conway|05029,Logan|05083,Nevada|05099,Izard|05065,Clay|05021,Lafayette|05073,Washington|05143,Greene|05055,Marion|05089,Dallas|05039,St. Francis|05123,Union|05139,Faulkner|05045,Cross|05037,Chicot|05017,Johnson|05071,Drew|05043,Lincoln|05079,Ashley|05003,Garland|05051,Poinsett|05111,Howard|05061,Miller|05091,Searcy|05129,Calhoun|05013,Cleveland|05025"};gCitiesInState["AZ"]= {"cityData": ", Phoenix|-112.08910|33.57220, Scottsdale|-111.86500|33.68720, Tempe|-111.93180|33.38810, Tucson|-110.87770|32.15580", "countyData": "Maricopa|04013,Pima|04019,Pinal|04021,Apache|04001,Santa Cruz|04023,Mohave|04015,Graham|04009,Yavapai|04025,Yuma|04027,Navajo|04017,Gila|04007,Cochise|04003,Coconino|04005,La Paz|04012,Greenlee|04011"};gCitiesInState["CA"]= {"cityData": ", Anaheim|-117.85720|33.83900, Bakersfield|-119.03540|35.35280, Carmel Valley|-121.73240|36.47970, Culver City|-118.39680|34.00580, Huntington Beach|-118.00230|33.69600, Long Beach|-118.16100|33.80590, Los Angeles|-118.40680|34.11400, Newport Beach|-117.86690|33.61510, Palo Alto|-122.14650|37.39170, Pasadena|-118.13890|34.15980, Sacramento|-121.46830|38.56660, San Clemente|-117.61030|33.44980, San Diego|-117.12250|32.83120, San Francisco|-122.44290|37.75610, San Jose|-121.84880|37.30200, Santa Ana|-117.88190|33.73660, Santa Clara|-121.96790|37.36460, Santa Cruz|-122.03460|36.97880, Stockton|-121.31110|37.97660", "countyData": "San Joaquin|06077,Los Angeles|06037,San Bernardino|06071,Modoc|06049,Riverside|06065,Madera|06039,Alameda|06001,Contra Costa|06013,Mendocino|06045,Humboldt|06023,Orange|06059,Sierra|06091,Solano|06095,Tulare|06107,Plumas|06063,Marin|06041,San Diego|06073,Alpine|06003,Placer|06061,Nevada|06057,Calaveras|06009,Santa Clara|06085,Amador|06005,Napa|06055,Santa Cruz|06087,Shasta|06089,Sacramento|06067,Colusa|06011,Kings|06031,San Benito|06069,San Luis Obispo|06079,Glenn|06021,Kern|06029,Mono|06051,San Mateo|06081,Merced|06047,Fresno|06019,El Dorado|06017,Santa Barbara|06083,Butte|06007,Tehama|06103,Lassen|06035,Trinity|06105,Tuolumne|06109,Inyo|06027,Monterey|06053,Sonoma|06097,Imperial|06025,Mariposa|06043,Yuba|06115,Stanislaus|06099,Siskiyou|06093,Ventura|06111,Yolo|06113,Lake|06033,Del Norte|06015,Sutter|06101,San Francisco|06075"};gCitiesInState["CO"]= {"cityData": ", Aspen|-106.83700|39.19480, Colorado Springs|-104.76050|38.86730, Denver|-104.87590|39.76210, Pueblo|-104.61300|38.27010, Telluride|-107.82640|37.93650", "countyData": "Douglas|08035,Adams|08001,Elbert|08039,Las Animas|08071,Washington|08121,Alamosa|08003,Boulder|08013,La Plata|08067,Park|08093,Gunnison|08051,Rio Grande|08105,Phillips|08095,Conejos|08021,Jefferson|08059,Cheyenne|08017,Archuleta|08007,Weld|08123,Kiowa|08061,Lincoln|08073,Pitkin|08097,Logan|08075,Eagle|08037,Pueblo|08101,Garfield|08045,Montrose|08085,Larimer|08069,Kit Carson|08063,El Paso|08041,Gilpin|08047,Costilla|08023,Moffat|08081,Summit|08117,Saguache|08109,Arapahoe|08005,Delta|08029,Prowers|08099,Fremont|08043,Clear Creek|08019,Broomfield|08014,Morgan|08087,Chaffee|08015,Dolores|08033,Baca|08009,Hinsdale|08053,Otero|08089,Mesa|08077,Ouray|08091,Routt|08107,Montezuma|08083,Jackson|08057,Mineral|08079,Teller|08119,Crowley|08025,Huerfano|08055,Denver|08031,Yuma|08125,San Miguel|08113,Grand|08049,Custer|08027,Bent|08011,Sedgwick|08115,Lake|08065,Rio Blanco|08103,San Juan|08111"};gCitiesInState["CT"]= {"cityData": ", Hartford|-72.68340|41.76610, Stamford|-73.55830|41.10350", "countyData": "New Haven|09009,Fairfield|09001,New London|09011,Litchfield|09005,Hartford|09003,Windham|09015,Middlesex|09007,Tolland|09013"};gCitiesInState["DC"]= {"cityData": "Washington|-77.01630|38.90470", "countyData": "District of Columbia|11001"};gCitiesInState["DE"]= {"cityData": ", New Castle|-75.56840|39.66890", "countyData": "New Castle|10003,Sussex|10005,Kent|10001"};gCitiesInState["FL"]= {"cityData": ", Cocoa Beach|-80.62740|28.33280, Daytona Beach|-81.09350|29.19590, Gainesville|-82.34540|29.68140, Jacksonville|-81.67490|30.33220, Key Largo|-80.41200|25.12240, Key West|-81.77680|24.56360, Miami|-80.21020|25.78400, Orlando|-81.34480|28.48010, Palm Beach|-80.04050|26.69280, Pensacola|-87.18860|30.44270, Tampa|-82.44540|27.99370, West Palm Beach|-80.13150|26.74680", "countyData": "Alachua|12001,Orange|12095,Polk|12105,Jackson|12063,Volusia|12127,Santa Rosa|12113,Seminole|12117,Calhoun|12013,Lafayette|12067,Lake|12069,Lee|12071,Nassau|12089,Levy|12075,St. Lucie|12111,Manatee|12081,Marion|12083,Franklin|12037,Hillsborough|12057,DeSoto|12027,Pasco|12101,St. Johns|12109,Clay|12019,Jefferson|12065,Taylor|12123,Duval|12031,Palm Beach|12099,Okaloosa|12091,Miami-Dade|12086,Highlands|12055,Hamilton|12047,Escambia|12033,Okeechobee|12093,Pinellas|12103,Bay|12005,Hernando|12053,Gulf|12045,Sarasota|12115,Gilchrist|12041,Brevard|12009,Flagler|12035,Citrus|12017,Monroe|12087,Walton|12131,Holmes|12059,Putnam|12107,Broward|12011,Hardee|12049,Leon|12073,Suwannee|12121,Liberty|12077,Bradford|12007,Glades|12043,Osceola|12097,Sumter|12119,Washington|12133,Charlotte|12015,Gadsden|12039,Collier|12021,Hendry|12051,Columbia|12023,Wakulla|12129,Dixie|12029,Union|12125,Indian River|12061,Baker|12003,Martin|12085,Madison|12079"};gCitiesInState["GA"]= {"cityData": ", Atlanta|-84.42310|33.76270, Marietta|-84.54200|33.95320", "countyData": "Wilcox|13315,Dougherty|13095,Cobb|13067,Bartow|13015,Cook|13075,Jasper|13159,Emanuel|13107,Montgomery|13209,Wheeler|13309,Berrien|13019,Lamar|13171,Burke|13033,Liberty|13179,Twiggs|13289,Bacon|13005,Newton|13217,Fulton|13121,Banks|13011,Meriwether|13199,Coffee|13069,Sumter|13261,Morgan|13211,Columbia|13073,Crisp|13081,Polk|13233,Jackson|13157,Glynn|13127,Bulloch|13031,Clinch|13065,Calhoun|13037,Oglethorpe|13221,Turner|13287,Clarke|13059,Brantley|13025,Decatur|13087,Barrow|13013,Richmond|13245,Stephens|13257,Jefferson|13163,DeKalb|13089,Atkinson|13003,Mitchell|13205,Brooks|13027,Habersham|13137,Cherokee|13057,Lowndes|13185,Thomas|13275,Appling|13001,Ware|13299,Evans|13109,Randolph|13243,Gwinnett|13135,Colquitt|13071,Walton|13297,Forsyth|13117,Oconee|13219,Pierce|13229,Union|13291,Early|13099,Bryan|13029,Chatham|13051,Fannin|13111,Clay|13061,Monroe|13207,Houston|13153,Clayton|13063,Carroll|13045,Hart|13147,Elbert|13105,Miller|13201,Paulding|13223,Haralson|13143,Laurens|13175,Worth|13321,Terrell|13273,Tift|13277,Stewart|13259,Fayette|13113,Marion|13197,Taylor|13269,Dooly|13093,Peach|13225,Warren|13301,Grady|13131,Gordon|13129,Madison|13195,Franklin|13119,Harris|13145,Floyd|13115,Walker|13295,Heard|13149,Toombs|13279,Murray|13213,Dodge|13091,Gilmer|13123,Hall|13139,Rabun|13241,White|13311,Effingham|13103,Tattnall|13267,Bleckley|13023,Whitfield|13313,Muscogee|13215,Pike|13231,Rockdale|13247,McIntosh|13191,Taliaferro|13265,Hancock|13141,Chattahoochee|13053,Lumpkin|13187,Washington|13303,Dawson|13085,McDuffie|13189,Jeff Davis|13161,Wayne|13305,Seminole|13253,Johnson|13167,Douglas|13097,Screven|13251,Spalding|13255,Jones|13169,Coweta|13077,Putnam|13237,Glascock|13125,Schley|13249,Camden|13039,Baker|13007,Jenkins|13165,Troup|13285,Candler|13043,Pulaski|13235,Ben Hill|13017,Henry|13151,Butts|13035,Charlton|13049,Catoosa|13047,Talbot|13263,Quitman|13239,Wilkinson|13319,Greene|13133,Upson|13293,Baldwin|13009,Echols|13101,Telfair|13271,Towns|13281,Chattooga|13055,Crawford|13079,Macon|13193,Irwin|13155,Pickens|13227,Lanier|13173,Lincoln|13181,Lee|13177,Bibb|13021,Long|13183,Dade|13083,Webster|13307,Wilkes|13317,Treutlen|13283"};gCitiesInState["HI"]= {"cityData": ", Honolulu|-157.84600|21.32930", "countyData": "Honolulu|15003,Hawaii|15001,Kauai|15007,Maui|15009,Kalawao|15005"};gCitiesInState["IA"]= {"cityData": ", Cedar Rapids|-91.67810|41.96670, Des Moines|-93.61040|41.57250", "countyData": "Jefferson|19101,Hardin|19083,Warren|19181,Guthrie|19077,Dallas|19049,Union|19175,Wapello|19179,Washington|19183,Plymouth|19149,Buena Vista|19021,Monroe|19135,Marshall|19127,Linn|19113,Franklin|19069,Kossuth|19109,Polk|19153,Wayne|19185,Butler|19023,Chickasaw|19037,Sioux|19167,Lyon|19119,Iowa|19095,Jones|19105,Story|19169,Fremont|19071,Clinton|19045,Jackson|19097,Cass|19029,Woodbury|19193,Adair|19001,Carroll|19027,O'Brien|19141,Lee|19111,Crawford|19047,Fayette|19065,Emmet|19063,Dickinson|19059,Ida|19093,Dubuque|19061,Osceola|19143,Muscatine|19139,Taylor|19173,Benton|19011,Marion|19125,Sac|19161,Audubon|19009,Cherokee|19035,Buchanan|19019,Pottawattamie|19155,Palo Alto|19147,Webster|19187,Mahaska|19123,Jasper|19099,Ringgold|19159,Grundy|19075,Boone|19015,Des Moines|19057,Davis|19051,Wright|19197,Cedar|19031,Scott|19163,Madison|19121,Page|19145,Van Buren|19177,Hamilton|19079,Monona|19133,Winneshiek|19191,Humboldt|19091,Worth|19195,Shelby|19165,Bremer|19017,Hancock|19081,Poweshiek|19157,Adams|19003,Tama|19171,Winnebago|19189,Cerro Gordo|19033,Harrison|19085,Mitchell|19131,Black Hawk|19013,Appanoose|19007,Lucas|19117,Floyd|19067,Howard|19089,Greene|19073,Clayton|19043,Montgomery|19137,Delaware|19055,Louisa|19115,Henry|19087,Johnson|19103,Decatur|19053,Keokuk|19107,Clay|19041,Allamakee|19005,Mills|19129,Calhoun|19025,Pocahontas|19151,Clarke|19039"};gCitiesInState["ID"]= {"cityData": ", Boise|-116.23060|43.59910", "countyData": "Bingham|16011,Minidoka|16067,Cassia|16031,Bonner|16017,Power|16077,Bonneville|16019,Butte|16023,Bannock|16005,Fremont|16043,Kootenai|16055,Elmore|16039,Shoshone|16079,Lemhi|16059,Caribou|16029,Franklin|16041,Boise|16015,Ada|16001,Blaine|16013,Bear Lake|16007,Gooding|16047,Boundary|16021,Latah|16057,Canyon|16027,Owyhee|16073,Twin Falls|16083,Oneida|16071,Madison|16065,Jefferson|16051,Washington|16087,Valley|16085,Custer|16037,Benewah|16009,Teton|16081,Idaho|16049,Adams|16003,Lewis|16061,Nez Perce|16069,Lincoln|16063,Clark|16033,Jerome|16053,Clearwater|16035,Gem|16045,Camas|16025,Payette|16075"};gCitiesInState["IL"]= {"cityData": ", Bloomington|-88.96980|40.47560, Chicago|-87.68610|41.83730, Joliet|-88.15030|41.52010, Peoria|-89.61530|40.75180, Springfield|-89.65380|39.77130", "countyData": "Knox|17095,McDonough|17109,Washington|17189,DuPage|17043,Ogle|17141,Franklin|17055,Whiteside|17195,Clinton|17027,Edwards|17047,Mercer|17131,Warren|17187,McHenry|17111,Madison|17119,Wabash|17185,Moultrie|17139,Champaign|17019,Marion|17121,St. Clair|17163,Henry|17073,Scott|17171,Cook|17031,Effingham|17049,Union|17181,Vermilion|17183,Lee|17103,McLean|17113,Rock Island|17161,Crawford|17033,Lake|17097,Jo Daviess|17085,Will|17197,Douglas|17041,Cass|17017,Macon|17115,Bureau|17011,Tazewell|17179,Kankakee|17091,Iroquois|17075,Coles|17029,Christian|17021,Fulton|17057,Menard|17129,Logan|17107,Sangamon|17167,Hancock|17067,Kane|17089,Jackson|17077,LaSalle|17099,Randolph|17157,Wayne|17191,Pike|17149,Peoria|17143,Calhoun|17013,Mason|17125,Woodford|17203,Johnson|17087,Hamilton|17065,Jefferson|17081,Boone|17007,Piatt|17147,Macoupin|17117,Adams|17001,Henderson|17071,Lawrence|17101,Fayette|17051,Jasper|17079,Edgar|17045,Kendall|17093,Grundy|17063,Stark|17175,Massac|17127,Pope|17151,Schuyler|17169,White|17193,Williamson|17199,Montgomery|17135,Ford|17053,Alexander|17003,Richland|17159,Livingston|17105,Saline|17165,Greene|17061,Clark|17023,Hardin|17069,Stephenson|17177,Carroll|17015,Morgan|17137,Winnebago|17201,Clay|17025,De Witt|17039,Monroe|17133,DeKalb|17037,Gallatin|17059,Shelby|17173,Perry|17145,Jersey|17083,Pulaski|17153,Putnam|17155,Cumberland|17035,Bond|17005,Marshall|17123,Brown|17009"};gCitiesInState["IN"]= {"cityData": ", Evansville|-87.53390|37.98820, Fort Wayne|-85.14360|41.08850, Indianapolis|-86.14580|39.77710, South Bend|-86.26900|41.67710", "countyData": "Porter|18127,Allen|18003,Decatur|18031,Boone|18011,Lake|18089,Fulton|18049,Montgomery|18107,Delaware|18035,Noble|18113,Madison|18095,Daviess|18027,Fayette|18041,Crawford|18025,DeKalb|18033,Benton|18007,Miami|18103,Tippecanoe|18157,Johnson|18081,Hendricks|18063,Franklin|18047,Huntington|18069,Steuben|18151,Hamilton|18057,Marshall|18099,Rush|18139,Fountain|18045,Dearborn|18029,Scott|18143,Lawrence|18093,Bartholomew|18005,Putnam|18133,Starke|18149,Ripley|18137,Knox|18083,Marion|18097,Shelby|18145,Adams|18001,Morgan|18109,Dubois|18037,Vermillion|18165,Greene|18055,Parke|18121,Monroe|18105,Henry|18065,Wells|18179,Warrick|18173,Clark|18019,Wayne|18177,Clay|18021,Elkhart|18039,Newton|18111,Jefferson|18077,White|18181,Jackson|18071,Jay|18075,Sullivan|18153,Kosciusko|18085,Carroll|18015,Vigo|18167,Martin|18101,Jennings|18079,Posey|18129,Clinton|18023,Washington|18175,Perry|18123,Owen|18119,Pike|18125,Harrison|18061,Orange|18117,Spencer|18147,Whitley|18183,Jasper|18073,Brown|18013,St. Joseph|18141,Vanderburgh|18163,Pulaski|18131,Switzerland|18155,LaGrange|18087,Grant|18053,Randolph|18135,LaPorte|18091,Gibson|18051,Hancock|18059,Warren|18171,Floyd|18043,Cass|18017,Howard|18067,Blackford|18009,Tipton|18159,Wabash|18169,Union|18161,Ohio|18115"};gCitiesInState["KS"]= {"cityData": ", Kansas City|-94.74430|39.12340, Topeka|-95.69550|39.03470", "countyData": "Reno|20155,Dickinson|20041,Ottawa|20143,Lyon|20111,Republic|20157,Phillips|20147,Coffey|20031,Cowley|20035,Barton|20009,Rice|20159,Rush|20165,Wabaunsee|20197,Norton|20137,Labette|20099,Osborne|20141,Wilson|20205,Lane|20101,Sedgwick|20173,Butler|20015,Sheridan|20179,Sumner|20191,Marion|20115,Harper|20077,Ellis|20051,Crawford|20037,Atchison|20005,Lincoln|20105,Mitchell|20123,Clark|20025,Saline|20169,Smith|20183,Rawlins|20153,Shawnee|20177,Cloud|20029,Marshall|20117,Nemaha|20131,Riley|20161,Douglas|20045,Osage|20139,Washington|20201,Leavenworth|20103,Allen|20001,Cherokee|20021,Ness|20135,Miami|20121,Ford|20057,Kingman|20095,Edwards|20047,Pottawatomie|20149,Doniphan|20043,Stanton|20187,Cheyenne|20023,Jackson|20085,Linn|20107,Graham|20065,Wyandotte|20209,Thomas|20193,Bourbon|20011,Russell|20167,Pawnee|20145,Morris|20127,Jewell|20089,Harvey|20079,Anderson|20003,Pratt|20151,Montgomery|20125,McPherson|20113,Ellsworth|20053,Decatur|20039,Chase|20017,Chautauqua|20019,Franklin|20059,Neosho|20133,Gray|20069,Johnson|20091,Clay|20027,Greenwood|20073,Rooks|20163,Comanche|20033,Trego|20195,Hamilton|20075,Kearny|20093,Sherman|20181,Elk|20049,Morton|20129,Brown|20013,Meade|20119,Finney|20055,Gove|20063,Geary|20061,Jefferson|20087,Kiowa|20097,Scott|20171,Hodgeman|20083,Barber|20007,Grant|20067,Greeley|20071,Stafford|20185,Stevens|20189,Seward|20175,Wichita|20203,Woodson|20207,Logan|20109,Haskell|20081,Wallace|20199"};gCitiesInState["KY"]= {"cityData": ", Frankfort|-84.86440|38.19240, Lexington|-84.45870|38.04230", "countyData": "Butler|21031,Logan|21141,Lawrence|21127,Allen|21003,Harlan|21095,Clinton|21053,Campbell|21037,Todd|21219,Floyd|21071,Calloway|21035,Anderson|21005,Warren|21227,Jefferson|21111,Grayson|21085,Jackson|21109,Henderson|21101,Hopkins|21107,Pike|21195,Bell|21013,Carlisle|21039,Knox|21121,Boyd|21019,Fayette|21067,Larue|21123,Bracken|21023,Marshall|21157,Barren|21009,Perry|21193,Shelby|21211,Nelson|21179,Ballard|21007,Kenton|21117,Meade|21163,Lee|21129,Metcalfe|21169,Ohio|21183,Boone|21015,Trimble|21223,Edmonson|21061,McLean|21149,Fleming|21069,Muhlenberg|21177,Owen|21187,Graves|21083,Greenup|21089,Bullitt|21029,Madison|21151,Laurel|21125,Harrison|21097,Breckinridge|21027,Livingston|21139,Letcher|21133,Webster|21233,Morgan|21175,Mercer|21167,Hart|21099,Rockcastle|21203,Owsley|21189,Garrard|21079,Marion|21155,Union|21225,Elliott|21063,Oldham|21185,Cumberland|21057,Clay|21051,Pulaski|21199,Pendleton|21191,Trigg|21221,Montgomery|21173,Henry|21103,Taylor|21217,Wolfe|21237,Adair|21001,Washington|21229,Nicholas|21181,Carroll|21041,Carter|21043,Magoffin|21153,Christian|21047,Fulton|21075,Hardin|21093,Caldwell|21033,Lewis|21135,Casey|21045,Powell|21197,Hickman|21105,Wayne|21231,McCreary|21147,Whitley|21235,Grant|21081,Lincoln|21137,Rowan|21205,Crittenden|21055,Russell|21207,Menifee|21165,Boyle|21021,Knott|21119,Mason|21161,Lyon|21143,Spencer|21215,Breathitt|21025,Daviess|21059,Johnson|21115,Monroe|21171,Franklin|21073,Simpson|21213,McCracken|21145,Estill|21065,Scott|21209,Gallatin|21077,Green|21087,Jessamine|21113,Hancock|21091,Leslie|21131,Martin|21159,Bourbon|21017,Woodford|21239,Robertson|21201,Bath|21011,Clark|21049"};gCitiesInState["LA"]= {"cityData": ", New Orleans|-89.92880|30.06870, Shreveport|-93.79590|32.46590", "countyData": "Vermilion|22113,St. Tammany|22103,Concordia|22029,Ascension|22005,Bienville|22013,West Baton Rouge|22121,Livingston|22063,Bossier|22015,Rapides|22079,Natchitoches|22069,East Carroll|22035,East Baton Rouge|22033,Richland|22083,St. Charles|22089,St. Mary|22101,Tangipahoa|22105,Vernon|22115,Washington|22117,Jackson|22049,Grant|22043,St. Bernard|22087,St. Landry|22097,Claiborne|22027,Winn|22127,Iberia|22045,Jefferson|22051,West Feliciana|22125,Beauregard|22011,Caldwell|22021,Evangeline|22039,Franklin|22041,Morehouse|22067,Pointe Coupee|22077,Ouachita|22073,Terrebonne|22109,Assumption|22007,Iberville|22047,Caddo|22017,Calcasieu|22019,Plaquemines|22075,Sabine|22085,De Soto|22031,Union|22111,Avoyelles|22009,Acadia|22001,St. Martin|22099,Lafayette|22055,Cameron|22023,Lafourche|22057,Lincoln|22061,East Feliciana|22037,St. James|22093,Webster|22119,Red River|22081,St. Helena|22091,West Carroll|22123,Madison|22065,St. John the Baptist|22095,Jefferson Davis|22053,Allen|22003,Catahoula|22025,La Salle Parish|22059,Orleans|22071,Tensas|22107"};gCitiesInState["MA"]= {"cityData": ", Boston|-71.08380|42.31890, Lowell|-71.32170|42.63890, Nantucket|-70.09470|41.27230, Springfield|-72.53950|42.11550, Waltham|-71.24230|42.38890, Worcester|-71.80790|42.27050", "countyData": "Plymouth|25023,Berkshire|25003,Hampden|25013,Hampshire|25015,Essex|25009,Middlesex|25017,Worcester|25027,Bristol|25005,Barnstable|25001,Norfolk|25021,Suffolk|25025,Franklin|25011,Dukes|25007,Nantucket|25019"};gCitiesInState["MD"]= {"cityData": ", Annapolis|-76.50470|38.97050, Baltimore|-76.61440|39.30510", "countyData": "Harford|24025,Garrett|24023,Prince George's|24033,Frederick|24021,Dorchester|24019,Wicomico|24045,Anne Arundel|24003,Washington|24043,Baltimore|24005,Montgomery|24031,St. Mary's|24037,Baltimore (city)|24510,Talbot|24041,Queen Anne's|24035,Allegany|24001,Cecil|24015,Charles|24017,Worcester|24047,Caroline|24011,Kent|24029,Calvert|24009,Somerset|24039,Howard|24027,Carroll|24013"};gCitiesInState["ME"]= {"cityData": ", Augusta|-69.73190|44.33410, Bangor|-68.79060|44.83220", "countyData": "Washington|23029,York|23031,Somerset|23025,Aroostook|23003,Hancock|23009,Androscoggin|23001,Kennebec|23011,Penobscot|23019,Sagadahoc|23023,Waldo|23027,Lincoln|23015,Cumberland|23005,Piscataquis|23021,Oxford|23017,Knox|23013,Franklin|23007"};gCitiesInState["MI"]= {"cityData": ", Detroit|-83.10240|42.38340, Grand Rapids|-85.65570|42.96150, Kalamazoo|-85.58820|42.27490", "countyData": "Lenawee|26091,Charlevoix|26029,Keweenaw|26083,Tuscola|26157,Iosco|26069,Emmet|26047,Antrim|26009,Calhoun|26025,St. Clair|26147,Allegan|26005,Hillsdale|26059,Wayne|26163,Ottawa|26139,Gratiot|26057,Lapeer|26087,Alpena|26007,Iron|26071,Kent|26081,Washtenaw|26161,Sanilac|26151,Manistee|26101,Genesee|26049,Macomb|26099,Montmorency|26119,Arenac|26011,Alger|26003,Bay|26017,Oakland|26125,Kalamazoo|26077,Baraga|26013,Huron|26063,Alcona|26001,Chippewa|26033,Lake|26085,Shiawassee|26155,Van Buren|26159,Delta|26041,Berrien|26021,Mecosta|26107,Clinton|26037,Isabella|26073,Gladwin|26051,Ionia|26067,Eaton|26045,Benzie|26019,Ontonagon|26131,Gogebic|26053,Marquette|26103,Saginaw|26145,Newaygo|26123,Wexford|26165,Mackinac|26097,Livingston|26093,Branch|26023,Jackson|26075,St. Joseph|26149,Houghton|26061,Monroe|26115,Menominee|26109,Montcalm|26117,Cass|26027,Leelanau|26089,Cheboygan|26031,Grand Traverse|26055,Clare|26035,Midland|26111,Mason|26105,Ingham|26065,Barry|26015,Otsego|26137,Osceola|26133,Oscoda|26135,Missaukee|26113,Dickinson|26043,Crawford|26039,Muskegon|26121,Schoolcraft|26153,Oceana|26127,Presque Isle|26141,Roscommon|26143,Kalkaska|26079,Ogemaw|26129,Luce|26095"};gCitiesInState["MN"]= {"cityData": ", Duluth|-92.13340|46.77970, Mankato|-93.97820|44.17200, Minneapolis|-93.26790|44.96350, Saint Cloud|-94.17180|45.53390", "countyData": "Norman|27107,Mower|27099,Nobles|27105,Washington|27163,Aitkin|27001,Hubbard|27057,Stearns|27145,Freeborn|27047,Stevens|27149,Wright|27171,St. Louis|27137,Wadena|27159,Douglas|27041,Chisago|27025,Jackson|27063,Winona|27169,Marshall|27089,Itasca|27061,Blue Earth|27013,Lyon|27083,Anoka|27003,Lake of the Woods|27077,Polk|27119,Dakota|27037,Swift|27151,Lincoln|27081,Ramsey|27123,Sibley|27143,Grant|27051,Pine|27115,Kandiyohi|27067,Becker|27005,Clay|27027,Murray|27101,Cass|27021,Roseau|27135,Clearwater|27029,Scott|27139,Carlton|27017,Crow Wing|27035,Big Stone|27011,Otter Tail|27111,Mahnomen|27087,Lake|27075,Rock|27133,Renville|27129,Sherburne|27141,Goodhue|27049,Lac qui Parle|27073,Redwood|27127,Beltrami|27007,Todd|27153,Chippewa|27023,Koochiching|27071,Cottonwood|27033,McLeod|27085,Steele|27147,Hennepin|27053,Faribault|27043,Mille Lacs|27095,Morrison|27097,Isanti|27059,Wilkin|27167,Red Lake|27125,Traverse|27155,Houston|27055,Yellow Medicine|27173,Watonwan|27165,Olmsted|27109,Fillmore|27045,Carver|27019,Meeker|27093,Martin|27091,Dodge|27039,Le Sueur|27079,Brown|27015,Nicollet|27103,Pope|27121,Kittson|27069,Benton|27009,Rice|27131,Pipestone|27117,Wabasha|27157,Pennington|27113,Cook|27031,Kanabec|27065,Waseca|27161"};gCitiesInState["MO"]= {"cityData": ", Jefferson City|-92.17570|38.56770, Kansas City|-94.55410|39.12390, Saint Louis|-90.24510|38.63580", "countyData": "Bates|29013,Stoddard|29207,St. Louis|29189,Buchanan|29021,Jasper|29097,Gentry|29075,Polk|29167,Clark|29045,Worth|29227,Cape Girardeau|29031,Lafayette|29107,Daviess|29061,Perry|29157,Oregon|29149,Andrew|29003,Montgomery|29139,DeKalb|29063,McDonald|29119,Pike|29163,Iron|29093,Mississippi|29133,St. Clair|29185,Scotland|29199,Dunklin|29069,Cass|29037,Dade|29057,Osage|29151,Nodaway|29147,Howard|29089,Jefferson|29099,Barry|29009,Saline|29195,Greene|29077,Boone|29019,Macon|29121,St. Charles|29183,Lawrence|29109,Callaway|29027,Douglas|29067,Livingston|29117,Clay|29047,Miller|29131,Ozark|29153,Ripley|29181,Knox|29103,Morgan|29141,Washington|29221,Maries|29125,Texas|29215,Laclede|29105,Scott|29201,Audrain|29007,Franklin|29071,Harrison|29081,Shelby|29205,Platte|29165,Holt|29087,Christian|29043,Shannon|29203,St. Francois|29187,Reynolds|29179,Cooper|29053,Henry|29083,Gasconade|29073,Ste. Genevieve|29186,Stone|29209,Jackson|29095,Carroll|29033,Dent|29065,Crawford|29055,Taney|29213,Pemiscot|29155,Howell|29091,Adair|29001,Caldwell|29025,Grundy|29079,Vernon|29217,Linn|29115,Butler|29023,Chariton|29041,Dallas|29059,Barton|29011,Randolph|29175,Moniteau|29135,Ray|29177,Camden|29029,Clinton|29049,New Madrid|29143,Lewis|29111,Cedar|29039,Lincoln|29113,Ralls|29173,Cole|29051,Johnson|29101,Madison|29123,Newton|29145,Wayne|29223,Benton|29015,Pulaski|29169,Hickory|29085,Wright|29229,Webster|29225,Phelps|29161,Schuyler|29197,Pettis|29159,Carter|29035,Atchison|29005,Monroe|29137,Bollinger|29017,Sullivan|29211,Marion|29127,Warren|29219,Putnam|29171,Mercer|29129,St. Louis (city)|29510"};gCitiesInState["MS"]= {"cityData": ", Jackson|-90.21240|32.31630, Tupelo|-88.72980|34.26370", "countyData": "Lafayette|28071,Monroe|28095,Choctaw|28019,Hinds|28049,George|28039,Tallahatchie|28135,Pontotoc|28115,Bolivar|28011,Yazoo|28163,Sharkey|28125,Hancock|28045,Washington|28151,Lawrence|28077,Lamar|28073,Lowndes|28087,Benton|28009,Lincoln|28085,Carroll|28015,Lauderdale|28075,Sunflower|28133,Lee|28081,Tunica|28143,Calhoun|28013,Clarke|28023,Tate|28137,Jefferson Davis|28065,Panola|28107,Wayne|28153,Jasper|28061,Perry|28111,Copiah|28029,Warren|28149,Quitman|28119,Webster|28155,Tishomingo|28141,Humphreys|28053,Winston|28159,Jackson|28059,Noxubee|28103,Alcorn|28003,Harrison|28047,Tippah|28139,Union|28145,Coahoma|28027,Stone|28131,Forrest|28035,Prentiss|28117,Scott|28123,Rankin|28121,Simpson|28127,Franklin|28037,Smith|28129,Neshoba|28099,Marshall|28093,Madison|28089,Claiborne|28021,Pearl River|28109,Leake|28079,Wilkinson|28157,Pike|28113,Newton|28101,Adams|28001,DeSoto|28033,Yalobusha|28161,Amite|28005,Covington|28031,Marion|28091,Holmes|28051,Walthall|28147,Kemper|28069,Montgomery|28097,Chickasaw|28017,Grenada|28043,Jones|28067,Attala|28007,Itawamba|28057,Jefferson|28063,Issaquena|28055,Leflore|28083,Greene|28041,Oktibbeha|28105,Clay|28025"};gCitiesInState["MT"]= {"cityData": ", Helena|-112.01960|46.59630", "countyData": "Stillwater|30095,Yellowstone|30111,Teton|30099,Mineral|30061,Madison|30057,Carter|30011,Gallatin|30031,Deer Lodge|30023,Sheridan|30091,Lake|30047,Cascade|30013,Rosebud|30087,Lewis and Clark|30049,Powell|30077,Hill|30041,Glacier|30035,Roosevelt|30085,Fallon|30025,Golden Valley|30037,Jefferson|30043,Flathead|30029,Carbon|30009,Sanders|30089,Powder River|30075,Chouteau|30015,Sweet Grass|30097,Treasure|30103,Missoula|30063,Pondera|30073,McCone|30055,Fergus|30027,Big Horn|30003,Silver Bow|30093,Musselshell|30065,Ravalli|30081,Liberty|30051,Park|30067,Blaine|30005,Garfield|30033,Richland|30083,Beaverhead|30001,Phillips|30071,Granite|30039,Toole|30101,Lincoln|30053,Prairie|30079,Petroleum|30069,Daniels|30019,Valley|30105,Judith Basin|30045,Dawson|30021,Wheatland|30107,Custer|30017,Meagher|30059,Broadwater|30007,Wibaux|30109"};gCitiesInState["NC"]= {"cityData": ", Charlotte|-80.83080|35.20800, Raleigh|-78.64410|35.83230", "countyData": "Bladen|37017,Moore|37125,Jackson|37099,Davie|37059,Hertford|37091,Alamance|37001,Swain|37173,Stanly|37167,Rutherford|37161,Pamlico|37137,Cherokee|37039,Harnett|37085,Anson|37007,Wake|37183,Randolph|37151,Johnston|37101,Buncombe|37021,Hoke|37093,Bertie|37015,Pender|37141,Carteret|37031,Beaufort|37013,Sampson|37163,Dare|37055,Pitt|37147,Durham|37063,Nash|37127,Mitchell|37121,Yancey|37199,Brunswick|37019,Henderson|37089,Avery|37011,Surry|37171,Currituck|37053,Robeson|37155,Edgecombe|37065,New Hanover|37129,Martin|37117,Wayne|37191,Gaston|37071,Cleveland|37045,Chatham|37037,Forsyth|37067,Alexander|37003,Duplin|37061,Montgomery|37123,Wilson|37195,Watauga|37189,Columbus|37047,Lincoln|37109,Cumberland|37051,Yadkin|37197,Clay|37043,Transylvania|37175,Craven|37049,Guilford|37081,Lee|37105,Catawba|37035,Franklin|37069,Granville|37077,Caldwell|37027,Camden|37029,Haywood|37087,Orange|37135,Chowan|37041,Mecklenburg|37119,Rowan|37159,Tyrrell|37177,Polk|37149,Cabarrus|37025,Burke|37023,Northampton|37131,Richmond|37153,Washington|37187,Wilkes|37193,Stokes|37169,Davidson|37057,Onslow|37133,Scotland|37165,Rockingham|37157,Pasquotank|37139,Halifax|37083,Hyde|37095,Union|37179,Graham|37075,Macon|37113,Gates|37073,Ashe|37009,McDowell|37111,Iredell|37097,Vance|37181,Perquimans|37143,Greene|37079,Madison|37115,Person|37145,Lenoir|37107,Caswell|37033,Warren|37185,Jones|37103,Alleghany|37005"};gCitiesInState["ND"]= {"cityData": ", Bismarck|-100.76940|46.81270", "countyData": "Richland|38077,Walsh|38099,Pembina|38067,Williams|38105,McKenzie|38053,LaMoure|38045,Cass|38017,Morton|38059,Cavalier|38019,Divide|38023,Slope|38087,McHenry|38049,Nelson|38063,Bottineau|38009,McIntosh|38051,Benson|38005,Burleigh|38015,Pierce|38069,Foster|38031,Golden Valley|38033,Rolette|38079,Stark|38089,McLean|38055,Ward|38101,Mercer|38057,Griggs|38039,Towner|38095,Traill|38097,Burke|38013,Wells|38103,Bowman|38011,Emmons|38029,Sargent|38081,Ramsey|38071,Stutsman|38093,Adams|38001,Logan|38047,Hettinger|38041,Sioux|38085,Grant|38037,Oliver|38065,Steele|38091,Mountrail|38061,Kidder|38043,Barnes|38003,Sheridan|38083,Dunn|38025,Dickey|38021,Ransom|38073,Grand Forks|38035,Billings|38007,Renville|38075,Eddy|38027"};gCitiesInState["NE"]= {"cityData": ", Lincoln|-96.68080|40.81020, Omaha|-96.04530|41.26340", "countyData": "Butler|31023,Gage|31067,Lancaster|31109,Brown|31017,Boone|31011,Hall|31079,Thayer|31169,Dixon|31051,Box Butte|31013,Harlan|31083,Loup|31115,Cass|31025,Holt|31089,Dodge|31053,Buffalo|31019,Morrill|31123,Nuckolls|31129,Boyd|31015,Custer|31041,Cherry|31031,Furnas|31065,Valley|31175,Merrick|31121,Washington|31177,Arthur|31005,Grant|31075,Saunders|31155,Sherman|31163,Adams|31001,Cedar|31027,Phelps|31137,Nemaha|31127,Hamilton|31081,Kearney|31099,Cuming|31039,Richardson|31147,Wheeler|31183,Red Willow|31145,Rock|31149,Madison|31119,Knox|31107,Seward|31159,Nance|31125,Sarpy|31153,Keith|31101,York|31185,Dundy|31057,Douglas|31055,Deuel|31049,Sheridan|31161,Webster|31181,Franklin|31061,Howard|31093,Lincoln|31111,Perkins|31135,Blaine|31009,Cheyenne|31033,Antelope|31003,Pawnee|31133,Otoe|31131,Keya Paha|31103,Garfield|31071,Kimball|31105,Scotts Bluff|31157,Wayne|31179,Dawes|31045,Chase|31029,Colfax|31037,Clay|31035,Platte|31141,Johnson|31097,Dawson|31047,Burt|31021,Saline|31151,Hitchcock|31087,Frontier|31063,Dakota|31043,Jefferson|31095,Gosper|31073,Fillmore|31059,Pierce|31139,Logan|31113,Greeley|31077,Thomas|31171,Hayes|31085,Banner|31007,Sioux|31165,Garden|31069,Thurston|31173,Hooker|31091,Polk|31143,Stanton|31167,McPherson|31117"};gCitiesInState["NH"]= {"cityData": ", Londonderry|-71.36170|42.85080", "countyData": "Belknap|33001,Hillsborough|33011,Grafton|33009,Carroll|33003,Coos|33007,Merrimack|33013,Sullivan|33019,Rockingham|33015,Strafford|33017,Cheshire|33005"};gCitiesInState["NJ"]= {"cityData": ", Atlantic City|-74.45240|39.37950, Trenton|-74.76400|40.22370", "countyData": "Atlantic|34001,Monmouth|34025,Camden|34007,Warren|34041,Bergen|34003,Salem|34033,Sussex|34037,Hunterdon|34019,Passaic|34031,Burlington|34005,Cape May|34009,Middlesex|34023,Mercer|34021,Ocean|34029,Gloucester|34015,Somerset|34035,Hudson|34017,Morris|34027,Cumberland|34011,Essex|34013,Union|34039"};gCitiesInState["NM"]= {"cityData": ", Santa Fe|-105.98180|35.66190", "countyData": "Socorro|35053,Rio Arriba|35039,Torrance|35057,Cibola|35006,Valencia|35061,Santa Fe|35049,Bernalillo|35001,Otero|35035,Sandoval|35043,McKinley|35031,Lincoln|35027,Colfax|35007,Hidalgo|35023,Doña Ana|35013,Guadalupe|35019,Catron|35003,Grant|35017,Sierra|35051,Taos|35055,Eddy|35015,San Juan|35045,Curry|35009,Union|35059,Roosevelt|35041,Mora|35033,Luna|35029,San Miguel|35047,Lea|35025,Chaves|35005,De Baca|35011,Quay|35037,Los Alamos|35028,Harding|35021"};gCitiesInState["NV"]= {"cityData": ", Carson City|-119.74740|39.15120, Las Vegas|-115.26030|36.22880, Reno|-119.84860|39.54870", "countyData": "Lincoln|32017,Nye|32023,Clark|32003,Elko|32007,Lander|32015,White Pine|32033,Eureka|32011,Carson City (city)|32510,Washoe|32031,Pershing|32027,Lyon|32019,Humboldt|32013,Esmeralda|32009,Churchill|32001,Douglas|32005,Mineral|32021,Storey|32029"};gCitiesInState["NY"]= {"cityData": ", Albany|-73.79870|42.66640, Buffalo|-78.84870|42.90160, Great Neck|-73.73310|40.80280, New York|-73.92490|40.69430, Niagara Falls|-79.01470|43.09210, Rochester|-77.61620|43.16810, Tuckahoe|-73.82300|40.95300", "countyData": "Ulster|36111,Greene|36039,Jefferson|36045,Steuben|36101,Chenango|36017,Rockland|36087,Erie|36029,Albany|36001,Nassau|36059,Orleans|36073,Oneida|36065,Genesee|36037,Allegany|36003,Cattaraugus|36009,Schuyler|36097,Oswego|36075,Clinton|36019,Suffolk|36103,Westchester|36119,Dutchess|36027,Montgomery|36057,Orange|36071,Delaware|36025,Tioga|36107,Niagara|36063,Wyoming|36121,Washington|36115,Essex|36031,Cayuga|36011,Rensselaer|36083,Livingston|36051,Onondaga|36067,Saratoga|36091,Sullivan|36105,Chautauqua|36013,Chemung|36015,Broome|36007,Cortland|36023,Warren|36113,Yates|36123,St. Lawrence|36089,Putnam|36079,Madison|36053,Monroe|36055,Fulton|36035,Bronx|36005,Kings|36047,Franklin|36033,Ontario|36069,Lewis|36049,Tompkins|36109,Herkimer|36043,Schoharie|36095,Columbia|36021,Otsego|36077,Wayne|36117,Schenectady|36093,Seneca|36099,Hamilton|36041,New York|36061,Queens|36081,Richmond|36085"};gCitiesInState["OH"]= {"cityData": ", Akron|-81.52190|41.08020, Cincinnati|-84.50600|39.14120, Cleveland|-81.68050|41.47660, Columbus|-82.98520|39.98590, Dayton|-84.19990|39.77980, Toledo|-83.58200|41.66390", "countyData": "Brown|39015,Hardin|39065,Muskingum|39119,Richland|39139,Gallia|39053,Hamilton|39061,Ross|39141,Jefferson|39081,Lawrence|39087,Summit|39153,Athens|39009,Licking|39089,Vinton|39163,Stark|39151,Greene|39057,Williams|39171,Fairfield|39045,Clermont|39025,Lorain|39093,Seneca|39147,Ashtabula|39007,Knox|39083,Shelby|39149,Darke|39037,Monroe|39111,Guernsey|39059,Paulding|39125,Wayne|39169,Geauga|39055,Hancock|39063,Fulton|39051,Belmont|39013,Ashland|39005,Delaware|39041,Pickaway|39129,Portage|39133,Butler|39017,Mahoning|39099,Noble|39121,Wood|39173,Sandusky|39143,Tuscarawas|39157,Washington|39167,Erie|39043,Cuyahoga|39035,Pike|39131,Allen|39003,Logan|39091,Huron|39077,Putnam|39137,Adams|39001,Lucas|39095,Holmes|39075,Franklin|39049,Madison|39097,Clinton|39027,Coshocton|39031,Fayette|39047,Trumbull|39155,Harrison|39067,Miami|39109,Union|39159,Montgomery|39113,Defiance|39039,Medina|39103,Auglaize|39011,Crawford|39033,Highland|39071,Mercer|39107,Warren|39165,Jackson|39079,Columbiana|39029,Marion|39101,Preble|39135,Hocking|39073,Morrow|39117,Wyandot|39175,Carroll|39019,Clark|39023,Ottawa|39123,Meigs|39105,Morgan|39115,Champaign|39021,Scioto|39145,Van Wert|39161,Perry|39127,Henry|39069,Lake|39085"};gCitiesInState["OK"]= {"cityData": ", Oklahoma City|-97.51380|35.46770, Tulsa|-95.90370|36.12840", "countyData": "Bryan|40013,Pontotoc|40123,Mayes|40097,Texas|40139,Jefferson|40067,Ottawa|40115,Grady|40051,Lincoln|40081,Sequoyah|40135,Caddo|40015,Pushmataha|40127,Pittsburg|40121,Alfalfa|40003,Nowata|40105,Tulsa|40143,Jackson|40065,Woods|40151,Major|40093,Garvin|40049,Custer|40039,Oklahoma|40109,Carter|40019,Le Flore|40079,Ellis|40045,Pottawatomie|40125,Atoka|40005,Hughes|40063,Osage|40113,Beaver|40007,Adair|40001,Washington|40147,Okfuskee|40107,Johnston|40069,Okmulgee|40111,Roger Mills|40129,Delaware|40041,Washita|40149,Craig|40035,Noble|40103,Garfield|40047,Pawnee|40117,Kay|40071,McClain|40087,Cimarron|40025,McCurtain|40089,Choctaw|40023,Seminole|40133,Muskogee|40101,Stephens|40137,Cherokee|40021,Creek|40037,Harper|40059,Love|40085,Rogers|40131,Comanche|40031,Canadian|40017,Dewey|40043,Blaine|40011,Beckham|40009,Kingfisher|40073,Logan|40083,Coal|40029,McIntosh|40091,Kiowa|40075,Cleveland|40027,Wagoner|40145,Marshall|40095,Woodward|40153,Payne|40119,Tillman|40141,Murray|40099,Grant|40053,Cotton|40033,Harmon|40057,Latimer|40077,Greer|40055,Haskell|40061"};gCitiesInState["OR"]= {"cityData": ", Portland|-122.65000|45.53720, Salem|-123.02450|44.92310", "countyData": "Benton|41003,Umatilla|41059,Lake|41037,Malheur|41045,Lincoln|41041,Curry|41015,Linn|41043,Deschutes|41017,Coos|41011,Washington|41067,Klamath|41035,Yamhill|41071,Wasco|41065,Jackson|41029,Clatsop|41007,Gilliam|41021,Jefferson|41031,Marion|41047,Baker|41001,Clackamas|41005,Tillamook|41057,Sherman|41055,Lane|41039,Morrow|41049,Multnomah|41051,Harney|41025,Douglas|41019,Grant|41023,Hood River|41027,Josephine|41033,Columbia|41009,Union|41061,Polk|41053,Wallowa|41063,Wheeler|41069,Crook|41013"};gCitiesInState["PA"]= {"cityData": ", Allentown|-75.47560|40.59620, Philadelphia|-75.13400|40.00760, Pittsburgh|-79.97630|40.43960, Scranton|-75.66490|41.40430", "countyData": "Centre|42027,Adams|42001,Montgomery|42091,Northampton|42095,Westmoreland|42129,Lancaster|42071,Crawford|42039,Somerset|42111,Armstrong|42005,Bradford|42015,Erie|42049,Carbon|42025,Lehigh|42077,Delaware|42045,Huntingdon|42061,Mifflin|42087,Beaver|42007,Berks|42011,Washington|42125,Union|42119,Fayette|42051,Allegheny|42003,Clearfield|42033,Columbia|42037,Schuylkill|42107,Blair|42013,Bedford|42009,Jefferson|42065,Lebanon|42075,Chester|42029,Tioga|42117,Indiana|42063,Lackawanna|42069,Monroe|42089,Luzerne|42079,Cambria|42021,Northumberland|42097,Potter|42105,Clinton|42035,Lycoming|42081,Venango|42121,Wayne|42127,Warren|42123,Snyder|42109,Dauphin|42043,Lawrence|42073,Pike|42103,Perry|42099,Franklin|42055,Greene|42059,Cumberland|42041,Butler|42019,McKean|42083,Bucks|42017,Elk|42047,Susquehanna|42115,Clarion|42031,Mercer|42085,York|42133,Montour|42093,Cameron|42023,Sullivan|42113,Juniata|42067,Wyoming|42131,Forest|42053,Fulton|42057,Philadelphia|42101"};gCitiesInState["PR"]= {"cityData": ", Bajadero|-66.67700|18.42350, Comerio Zona Urbana|-66.22430|18.22030, Pastos Comunidad|-66.26010|18.11930", "countyData": "Moca|72099,Adjuntas|72001,Aguada|72003,Aguadilla|72005,Aguas Buenas|72007,Ceiba|72037,Juana Díaz|72075,Aibonito|72009,Camuy|72027,Añasco|72011,Arecibo|72013,Ponce|72113,Humacao|72069,Arroyo|72015,Caguas|72025,Morovis|72101,Barceloneta|72017,Barranquitas|72019,Río Grande|72119,Bayamón|72021,Cidra|72041,Canóvanas|72029,Cabo Rojo|72023,Vega Alta|72143,Quebradillas|72115,Toa Baja|72137,Carolina|72031,Hatillo|72065,Cataño|72033,Cayey|72035,Utuado|72141,Gurabo|72063,Salinas|72123,Ciales|72039,Coamo|72043,Comerío|72045,Yabucoa|72151,Guayama|72057,Corozal|72047,Vega Baja|72145,Manatí|72091,Culebra|72049,Naguabo|72103,Dorado|72051,Juncos|72077,Santa Isabel|72133,Guánica|72055,Maunabo|72095,Vieques|72147,Fajardo|72053,Florida|72054,Toa Alta|72135,Guayanilla|72059,Guaynabo|72061,San Sebastián|72131,Hormigueros|72067,Isabela|72071,San Lorenzo|72129,Jayuya|72073,Las Piedras|72085,Lajas|72079,Patillas|72109,Lares|72081,Las Marías|72083,Sabana Grande|72121,Loíza|72087,Luquillo|72089,Maricao|72093,Mayagüez|72097,Naranjito|72105,Orocovis|72107,Peñuelas|72111,Rincón|72117,San Germán|72125,San Juan|72127,Trujillo Alto|72139,Villalba|72149,Yauco|72153"};gCitiesInState["RI"]= {"cityData": ", Pawtucket|-71.37440|41.87430, Providence|-71.41860|41.82290", "countyData": "Washington|44009,Providence|44007,Kent|44003,Newport|44005"};gCitiesInState["SC"]= {"cityData": ", Charleston|-79.96430|32.81370, Columbia|-80.90430|34.03660, Greenville|-82.36490|34.83640, Myrtle Beach|-78.88440|33.70950, Spartanburg|-81.92560|34.94370", "countyData": "Abbeville|45001,Aiken|45003,Clarendon|45027,Allendale|45005,Berkeley|45015,Anderson|45007,Williamsburg|45089,Spartanburg|45083,Richland|45079,Pickens|45077,Colleton|45029,Horry|45051,Charleston|45019,Bamberg|45009,Barnwell|45011,Lexington|45063,Beaufort|45013,Marlboro|45069,Greenville|45045,Kershaw|45055,Lee|45061,Cherokee|45021,Chester|45023,Orangeburg|45075,Greenwood|45047,Hampton|45049,Union|45087,Calhoun|45017,Sumter|45085,York|45091,Marion|45067,Newberry|45071,Chesterfield|45025,McCormick|45065,Laurens|45059,Jasper|45053,Florence|45041,Darlington|45031,Dillon|45033,Dorchester|45035,Edgefield|45037,Oconee|45073,Georgetown|45043,Lancaster|45057,Fairfield|45039,Saluda|45081"};gCitiesInState["SD"]= {"cityData": ", Aberdeen|-98.46780|45.46470, Rapid City|-103.22000|44.07090, Sioux Falls|-96.73150|43.53820", "countyData": "Brown|46013,Sully|46119,Walworth|46129,Grant|46051,Union|46127,Hanson|46061,Bennett|46007,Jerauld|46073,Deuel|46039,Marshall|46091,Day|46037,Todd|46121,Kingsbury|46077,Douglas|46043,Campbell|46021,Sanborn|46111,Pennington|46103,Spink|46115,Brookings|46011,Aurora|46003,Bon Homme|46009,Minnehaha|46099,Oglala Lakota|46102,Butte|46019,Jackson|46071,Brule|46015,Perkins|46105,Meade|46093,Hughes|46065,Gregory|46053,Beadle|46005,Edmunds|46045,Clark|46025,Lake|46079,Ziebach|46137,McCook|46087,Hamlin|46057,Harding|46063,Custer|46033,Corson|46031,Clay|46027,Miner|46097,Lincoln|46083,Jones|46075,Turner|46125,Lawrence|46081,Faulk|46049,Roberts|46109,Moody|46101,Tripp|46123,Mellette|46095,Charles Mix|46023,Hutchinson|46067,Dewey|46041,Fall River|46047,Davison|46035,McPherson|46089,Codington|46029,Stanley|46117,Buffalo|46017,Yankton|46135,Potter|46107,Hyde|46069,Lyman|46085,Haakon|46055,Hand|46059"};gCitiesInState["TN"]= {"cityData": ", Clarksville|-87.34280|36.56960, Memphis|-89.97730|35.10470, Nashville|-86.78440|36.17140", "countyData": "Robertson|47147,McNairy|47109,Crockett|47033,Blount|47009,DeKalb|47041,Putnam|47141,Fentress|47049,Overton|47133,Grundy|47061,Anderson|47001,Hamilton|47065,Giles|47055,Shelby|47157,Claiborne|47025,Cheatham|47021,Lauderdale|47097,McMinn|47107,Tipton|47167,Carroll|47017,Cannon|47015,Greene|47059,Jefferson|47089,Unicoi|47171,Grainger|47057,Madison|47113,Coffee|47031,Marshall|47117,Wilson|47189,Bedford|47003,Davidson|47037,Franklin|47051,Polk|47139,Sumner|47165,Stewart|47161,Benton|47005,Sullivan|47163,Dyer|47045,Humphreys|47085,Hardeman|47069,White|47185,Hickman|47081,Cumberland|47035,Fayette|47047,Gibson|47053,Williamson|47187,Haywood|47075,Smith|47159,Hawkins|47073,Dickson|47043,Pickett|47137,Warren|47177,Carter|47019,Campbell|47013,Clay|47027,Bradley|47011,Henderson|47077,Rutherford|47149,Montgomery|47125,Wayne|47181,Morgan|47129,Maury|47119,Henry|47079,Knox|47093,Union|47173,Hardin|47071,Sequatchie|47153,Rhea|47143,Meigs|47121,Decatur|47039,Jackson|47087,Weakley|47183,Scott|47151,Lincoln|47103,Chester|47023,Houston|47083,Lawrence|47099,Sevier|47155,Washington|47179,Perry|47135,Loudon|47105,Roane|47145,Cocke|47029,Trousdale|47169,Lewis|47101,Obion|47131,Marion|47115,Macon|47111,Moore|47127,Monroe|47123,Hamblen|47063,Johnson|47091,Bledsoe|47007,Lake|47095,Hancock|47067,Van Buren|47175"};gCitiesInState["TX"]= {"cityData": ", Dallas|-96.76590|32.79380, El Paso|-106.43100|31.84780, Houston|-95.39360|29.78710, Waco|-97.18820|31.55970", "countyData": "Hill|48217,Carson|48065,Lubbock|48303,Taylor|48441,Hidalgo|48215,Polk|48373,Dawson|48115,Lampasas|48281,Harris|48201,Dallas|48113,Oldham|48359,Potter|48375,Parker|48367,Nueces|48355,Webb|48479,Floyd|48153,Brooks|48047,El Paso|48141,Bexar|48029,Gray|48179,Wood|48499,Shackelford|48417,Gillespie|48171,Red River|48387,Erath|48143,Jim Wells|48249,San Saba|48411,Galveston|48167,Collin|48085,Brazos|48041,Colorado|48089,Wheeler|48483,Ellis|48139,Victoria|48469,Brewster|48043,Cherokee|48073,Johnson|48251,Brazoria|48039,Wise|48497,Zavala|48507,Liberty|48291,Lamb|48279,Val Verde|48465,Chambers|48071,Grimes|48185,Andrews|48003,Navarro|48349,Jones|48253,Hockley|48219,Trinity|48455,Nacogdoches|48347,San Patricio|48409,Ector|48135,Archer|48009,Fort Bend|48157,Titus|48449,Denton|48121,Tarrant|48439,Coryell|48099,Smith|48423,Cameron|48061,La Salle|48283,Lamar|48277,Dimmit|48127,Stonewall|48433,Henderson|48213,Cass|48067,Travis|48453,Houston|48225,Refugio|48391,McLennan|48309,Starr|48427,Fannin|48147,Callahan|48059,Pecos|48371,Runnels|48399,Reeves|48389,Bandera|48019,Brown|48049,Edwards|48137,Irion|48235,Ward|48475,Williamson|48491,Bowie|48037,Bastrop|48021,Hardin|48199,Moore|48341,Matagorda|48321,Hays|48209,Jefferson|48245,Gonzales|48177,Panola|48365,Bee|48025,Montague|48337,Bell|48027,Clay|48077,Grayson|48181,Austin|48015,Milam|48331,Limestone|48293,Van Zandt|48467,Duval|48131,Robertson|48395,Knox|48275,Goliad|48175,Marion|48315,Hansford|48195,Burnet|48053,Jasper|48241,Upshur|48459,Reagan|48383,Howard|48227,Frio|48163,Parmer|48369,Nolan|48353,Blanco|48031,Newton|48351,Cochran|48079,Kendall|48259,Wharton|48481,Baylor|48023,Lipscomb|48295,Hutchinson|48233,Mills|48333,Rusk|48401,Comal|48091,Kinney|48271,McCulloch|48307,Scurry|48415,Eastland|48133,Hopkins|48223,Palo Pinto|48363,Hood|48221,Stephens|48429,Washington|48477,Lavaca|48285,Orange|48361,San Augustine|48405,Sabine|48403,Coke|48081,Waller|48473,Terry|48445,Anderson|48001,Jack|48237,Llano|48299,Leon|48289,Mitchell|48335,Wichita|48485,Angelina|48005,Coleman|48083,Hunt|48231,Burleson|48051,McMullen|48311,Cooke|48097,Real|48385,Atascosa|48013,Hemphill|48211,Presidio|48377,Randall|48381,Childress|48075,Tom Green|48451,Hamilton|48193,Fayette|48149,Morris|48343,Medina|48325,Cottle|48101,Falls|48145,Shelby|48419,Kerr|48265,Hartley|48205,Delta|48119,Montgomery|48339,Tyler|48457,Hardeman|48197,Rockwall|48397,Karnes|48255,Guadalupe|48187,Kent|48263,Donley|48129,Gregg|48183,Armstrong|48011,Bosque|48035,San Jacinto|48407,Comanche|48093,Kaufman|48257,Uvalde|48463,DeWitt|48123,Crosby|48107,Dallam|48111,Crane|48103,Foard|48155,Caldwell|48055,Harrison|48203,Hudspeth|48229,Yoakum|48501,Freestone|48161,Dickens|48125,Lee|48287,Castro|48069,Live Oak|48297,Walker|48471,Collingsworth|48087,Maverick|48323,Rains|48379,Concho|48095,Hale|48189,Jackson|48239,Throckmorton|48447,Schleicher|48413,Young|48503,Bailey|48017,Hall|48191,Aransas|48007,Zapata|48505,Ochiltree|48357,Motley|48345,Wilson|48493,Jeff Davis|48243,Mason|48319,Borden|48033,Glasscock|48173,Somervell|48425,Jim Hogg|48247,King|48269,Swisher|48437,Wilbarger|48487,Haskell|48207,Deaf Smith|48117,Menard|48327,Calhoun|48057,Kimble|48267,Winkler|48495,Kleberg|48273,Willacy|48489,Martin|48317,Fisher|48151,Gaines|48165,Madison|48313,Upton|48461,Loving|48301,Roberts|48393,Midland|48329,Franklin|48159,Lynn|48305,Camp|48063,Crockett|48105,Garza|48169,Briscoe|48045,Terrell|48443,Kenedy|48261,Sutton|48435,Sterling|48431,Sherman|48421,Culberson|48109"};gCitiesInState["UT"]= {"cityData": ", Ogden|-111.96770|41.22810, Salt Lake City|-111.93010|40.77740", "countyData": "Millard|49027,Beaver|49001,Utah|49049,Salt Lake|49035,Duchesne|49013,Kane|49025,Cache|49005,San Juan|49037,Piute|49031,Sevier|49041,Garfield|49017,Washington|49053,Sanpete|49039,Uintah|49047,Box Elder|49003,Iron|49021,Wayne|49055,Davis|49011,Juab|49023,Carbon|49007,Emery|49015,Grand|49019,Wasatch|49051,Summit|49043,Tooele|49045,Daggett|49009,Weber|49057,Rich|49033,Morgan|49029"};gCitiesInState["VA"]= {"cityData": ", Brownsburg|-79.31920|37.92850, Grundy|-82.09880|37.27540", "countyData": "Craig|51045,Washington|51191,Accomack|51001,Gloucester|51073,Westmoreland|51193,Smyth|51173,Albemarle|51003,Brunswick|51025,Alexandria (city)|51510,Alleghany|51005,Pulaski|51155,Campbell|51031,Halifax|51083,Amelia|51007,Amherst|51009,Tazewell|51185,Fairfax|51059,Wise|51195,Louisa|51109,Warren|51187,Appomattox|51011,Stafford|51179,Patrick|51141,Loudoun|51107,Arlington|51013,Nelson|51125,Buckingham|51029,Hanover|51085,Augusta|51015,Wythe|51197,Henry|51089,Bath|51017,Mecklenburg|51117,Bland|51021,Shenandoah|51171,Fauquier|51061,Bedford|51019,Chesterfield|51041,Rockingham|51165,Isle of Wight|51093,Clarke|51043,Montgomery|51121,Nottoway|51135,Pittsylvania|51143,Botetourt|51023,Franklin|51067,Caroline|51033,Southampton|51175,Prince William|51153,Madison|51113,Bristol (city)|51520,Spotsylvania|51177,Rockbridge|51163,Frederick|51069,Buena Vista (city)|51530,Northumberland|51133,Carroll|51035,Northampton|51131,Cumberland|51049,Russell|51167,Roanoke|51161,Lee|51105,Essex|51057,King William|51101,Henrico|51087,Charles City|51036,Charlotte|51037,Charlottesville (city)|51540,Chesapeake (city)|51550,Rappahannock|51157,Surry|51181,Dickenson|51051,Scott|51169,Colonial Heights (city)|51570,Fluvanna|51065,Covington (city)|51580,Culpeper|51047,King George|51099,Danville (city)|51590,Middlesex|51119,Dinwiddie|51053,Prince George|51149,Lunenburg|51111,Giles|51071,Goochland|51075,Emporia (city)|51595,Fairfax (city)|51600,Falls Church (city)|51610,Prince Edward|51147,Richmond|51159,Floyd|51063,Franklin (city)|51620,Fredericksburg (city)|51630,Grayson|51077,Galax (city)|51640,Orange|51137,King and Queen|51097,Buchanan|51027,Mathews|51115,Hampton (city)|51650,Harrisonburg (city)|51660,Hopewell (city)|51670,Lancaster|51103,Greensville|51081,Lexington (city)|51678,Page|51139,Lynchburg (city)|51680,Manassas (city)|51683,Manassas Park (city)|51685,Martinsville (city)|51690,Highland|51091,Powhatan|51145,New Kent|51127,Newport News (city)|51700,Norfolk (city)|51710,Norton (city)|51720,Petersburg (city)|51730,Poquoson (city)|51735,Portsmouth (city)|51740,Radford (city)|51750,Richmond (city)|51760,Roanoke (city)|51770,Greene|51079,Salem (city)|51775,York|51199,Staunton (city)|51790,Sussex|51183,Suffolk (city)|51800,James City|51095,Virginia Beach (city)|51810,Waynesboro (city)|51820,Williamsburg (city)|51830,Winchester (city)|51840"};gCitiesInState["VI"]= {"cityData": "", "countyData": "St. Thomas|78030,St. Croix|78010,St. John|78020"};gCitiesInState["VT"]= {"cityData": ", Montpelier|-72.57170|44.26580, Newport|-72.20880|44.93750", "countyData": "Orleans|50019,Grand Isle|50013,Bennington|50003,Windsor|50027,Caledonia|50005,Washington|50023,Essex|50009,Windham|50025,Rutland|50021,Orange|50017,Addison|50001,Chittenden|50007,Lamoille|50015,Franklin|50011"};gCitiesInState["WA"]= {"cityData": ", Olympia|-122.89580|47.04170, Renton|-122.19040|47.47570, Seattle|-122.32380|47.62170, Spokane|-117.43300|47.66710, Tacoma|-122.45310|47.24310", "countyData": "Grays Harbor|53027,Whatcom|53073,Stevens|53065,King|53033,Lewis|53041,Okanogan|53047,Yakima|53077,Spokane|53063,Whitman|53075,Pierce|53053,Snohomish|53061,Skagit|53057,Mason|53045,Lincoln|53043,Douglas|53017,Wahkiakum|53069,Clark|53011,Asotin|53003,Kitsap|53035,Chelan|53007,Cowlitz|53015,Benton|53005,Ferry|53019,Franklin|53021,Pacific|53049,Jefferson|53031,Clallam|53009,Adams|53001,Grant|53025,Klickitat|53039,Thurston|53067,Walla Walla|53071,Island|53029,Pend Oreille|53051,Skamania|53059,Kittitas|53037,Columbia|53013,San Juan|53055,Garfield|53023"};gCitiesInState["WI"]= {"cityData": ", Madison|-89.39210|43.08090, Milwaukee|-87.96690|43.06400, Waukesha|-88.24620|43.00880", "countyData": "Clark|55019,Oconto|55083,Sheboygan|55117,Adams|55001,Green|55045,Chippewa|55017,Dodge|55027,Kewaunee|55061,Washington|55131,Winnebago|55139,Brown|55009,Buffalo|55011,Jackson|55053,Barron|55005,Portage|55097,Eau Claire|55035,Marinette|55075,Polk|55095,Shawano|55115,Langlade|55067,Outagamie|55087,Trempealeau|55121,Iowa|55049,Forest|55041,Lafayette|55065,Pepin|55091,Columbia|55021,Wood|55141,Ashland|55003,Marathon|55073,Waushara|55137,Rock|55105,Grant|55043,Door|55029,St. Croix|55109,La Crosse|55063,Sauk|55111,Pierce|55093,Bayfield|55007,Milwaukee|55079,Ozaukee|55089,Crawford|55023,Dane|55025,Green Lake|55047,Waukesha|55133,Waupaca|55135,Washburn|55129,Richland|55103,Douglas|55031,Racine|55101,Vilas|55125,Dunn|55033,Fond du Lac|55039,Price|55099,Marquette|55077,Calumet|55015,Kenosha|55059,Rusk|55107,Jefferson|55055,Juneau|55057,Monroe|55081,Vernon|55123,Taylor|55119,Sawyer|55113,Oneida|55085,Manitowoc|55071,Walworth|55127,Burnett|55013,Lincoln|55069,Florence|55037,Iron|55051,Menominee|55078"};gCitiesInState["WV"]= {"cityData": ", Covel|-81.31940|37.49060", "countyData": "Upshur|54097,Logan|54045,Preston|54077,Greenbrier|54025,Lewis|54041,Kanawha|54039,McDowell|54047,Harrison|54033,Calhoun|54013,Fayette|54019,Mason|54053,Pocahontas|54075,Mercer|54055,Ritchie|54085,Hampshire|54027,Hardy|54031,Boone|54005,Putnam|54079,Cabell|54011,Marion|54049,Grant|54023,Raleigh|54081,Brooke|54009,Barbour|54001,Pleasants|54073,Nicholas|54067,Randolph|54083,Tyler|54095,Marshall|54051,Webster|54101,Morgan|54065,Ohio|54069,Monongalia|54061,Wood|54107,Jefferson|54037,Lincoln|54043,Pendleton|54071,Wyoming|54109,Wirt|54105,Summers|54089,Mineral|54057,Braxton|54007,Wayne|54099,Mingo|54059,Hancock|54029,Clay|54015,Tucker|54093,Jackson|54035,Gilmer|54021,Berkeley|54003,Taylor|54091,Wetzel|54103,Roane|54087,Monroe|54063,Doddridge|54017"};gCitiesInState["WY"]= {"cityData": ", Cheyenne|-104.79430|41.14180", "countyData": "Sheridan|56033,Lincoln|56023,Crook|56011,Albany|56001,Laramie|56021,Natrona|56025,Uinta|56041,Teton|56039,Fremont|56013,Carbon|56007,Sweetwater|56037,Big Horn|56003,Sublette|56035,Johnson|56019,Platte|56031,Park|56029,Converse|56009,Hot Springs|56017,Goshen|56015,Campbell|56005,Weston|56045,Niobrara|56027,Washakie|56043"};		$(document).ready(function(){
+			var tooltip = d3.select("body").append("div")
+			.attr("class", "tooltip")       
+			.style("opacity", 0);
+
+			for(var key in gCitiesInState){
+				var arrCounties	= gCitiesInState[key].countyData.split(",");
+				for (var i = 0; i < arrCounties.length; i++) {
+					var objCounty = arrCounties[i].split("|");
+					gCountiesAll[objCounty[1]] = objCounty[0];
+				}
+			}
+			//DOES NOT SHOW ALASKA geoAlbers
+			gProjection = d3.geoAlbersUsa();//d3.geoAlbers();
+			//d3 projection anticipates a 960 x 500
+			var scale = d3.geoAlbers().scale(); // get the default scale
+			gProjection.scale(scale * 1.2)		// adjust for 600 pixels tall
+			.translate([gWidth/2,gHeight/2]);		// adjust for 600 pixels tall here too.
+			gGeoPath	= d3.geoPath();
+			___gSVG		= d3.select("#svgUSMAP").attr("width", gWidth).attr("height", gHeight);
+			var localMapGrp = d3.select("#groupMapElements");
+			d3.json("us-states-10.json", function(error, us) {
+				if (error){
+					alert(error);
+					throw error;
+				}
+				var JSONStates = topojson.feature(us, us.objects.states).features;
+
+				localMapGrp
+				.append("g")
+				.selectAll("text")
+				.data(topojson.feature(us, us.objects.states).features)
+				.enter()
+				.append("path")
+				.attr("d", gGeoPath)
+				.attr("id", function(d){
+					return "US_" + gStates[d.id];
+				})
+				.attr("class", "state")
+				.on("mousedown", function(d) {
+					onMouseDown(d, $("#US_" + gStates[d.id])[0]);
+				})
+				.style("stroke", "#fff")
+				.style("stroke-width", "1")
+				.style("fill", function(d) {
+					return getRandomColor();
+				});
+				
+				localMapGrp.append("path")
+				.attr("class", "state-borders")
+				.attr("d", gGeoPath(topojson.mesh(us, us.objects.states, function(a, b) { return a !== b; })));
+				
+				var grpMapLines = d3.select("#groupMapLines")	
+				grpMapLines.append("g")
+				.selectAll("g")
+				.data(JSONStates.filter(function(d){
+					var smallStateIndex = ["VT", "NH", "MA", "RI", "CT", "NJ", "DE", "MD", "DC"].indexOf(gStates[d.id]);
+					if(smallStateIndex > -1){
+						return true;
+					} 
+					else 
+						return false;
+				}))
+				.enter()
+				.append("line")
+				.attr("x1", function(d){ 
+					if(d.properties.line1){
+						return gProjection(d.properties.line1)[0];
+					} else{
+						return 0;
+					}
+				})
+				.attr("y1", function(d){ 
+					if(d.properties.line1){
+						return gProjection(d.properties.line1)[1];
+					} else{
+						return 0;
+					}
+				})
+				.attr("x2", function(d){ 
+					if(d.properties.line2){
+						return gProjection(d.properties.line2)[0];
+					} else{
+						return 0;
+					}
+				})
+				.attr("y2", function(d){ 
+					if(d.properties.line2){
+						return gProjection(d.properties.line2)[1];
+					} else{
+						return 0;
+					}
+				})
+				.attr("stroke", "black")
+				.attr("stroke-width", 2.2)
+				.attr("fill", "none")
+				.style("opacity", 1);
+				
+				localMapGrp.append("g")
+				.selectAll("text")
+				.data(topojson.feature(us, us.objects.states).features)
+				.enter()
+				.append("svg:text")
+				.text(function(d){
+					return gStates[d.id];
+				})
+				.attr("id", function(d){
+					return "BTN_" + gStates[d.id];
+				})
+				.on("mousedown", function(d) {
+					onMouseDown(d, $("#US_" + gStates[d.id])[0]);
+				})
+				.attr("x", function(d){
+					var pos = gGeoPath.centroid(d ? d : 0)[0];
+					if(!isNaN(d.properties.dx)){
+						return parseFloat(pos) + parseFloat(d.properties.dx);
+					} else {
+						return pos;
+					}
+				})
+				.attr("y", function(d){
+					var pos = gGeoPath.centroid(d ? d : 0)[1];
+					if(!isNaN(d.properties.dy)){
+						return parseFloat(pos) + parseFloat(d.properties.dy);
+					} else {
+						return pos;
+					}
+				})
+				.style("fill", function(d){
+					if(d.properties.line1){
+						return "rgb(0,0,0)";
+					} else{
+						if($("#US_" + gStates[d.id])[0]){
+							return contrastColor($("#US_" + gStates[d.id])[0].style.fill);
+						} else{
+							return "rgb(0,0,0)";
+						}
+					}
+				})
+				.attr("class","path")
+				.attr("text-anchor","middle")
+				.attr('font-size','12pt')
+				.attr('font-weight','800');
+			});
+			gGroupPoints	= d3.select("#groupCityPoints");
+			gActiveState	= d3.select(null);
+			$(window).resize(checkSize);
+			checkSize();
+		});
+    </script>
+</head>
+<body>
+	<div id="divMain">
+		<div class="left">
+			<div id="divCities" style="padding-top:20px; height:360px;overflow-y:auto;"></div>
+		</div>
+        <div id="divUSA" class="right" >
+            <div id="divMap">
+            <svg id="svgUSMAP" width="960" height="600" xmlns="http://www.w3.org/2000/svg" xmlns:amcharts="http://amcharts.com/ammap" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1">
+				<g id="groupMapAll">
+					<g id="groupMapElements">
+					</g>
+					<g id="groupMapLines">
+					</g>
+					<g id="groupCounties">
+						<g id="US_AK_COUNTIES"></g>
+						<g id="US_AL_COUNTIES"></g>
+						<g id="US_AZ_COUNTIES"></g>
+						<g id="US_CA_COUNTIES"></g>
+						<g id="US_CO_COUNTIES"></g>
+						<g id="US_CT_COUNTIES"></g>
+						<g id="US_DC_COUNTIES"></g>
+						<g id="US_DE_COUNTIES"></g>
+						<g id="US_FL_COUNTIES"></g>
+						<g id="US_GA_COUNTIES"></g>
+						<g id="US_IA_COUNTIES"></g>
+						<g id="US_IL_COUNTIES"></g>
+						<g id="US_KS_COUNTIES"></g>
+						<g id="US_LA_COUNTIES"></g>
+						<g id="US_MN_COUNTIES"></g>
+						<g id="US_MO_COUNTIES"></g>
+						<g id="US_MS_COUNTIES"></g>
+						<g id="US_NE_COUNTIES"></g>
+						<g id="US_NV_COUNTIES"></g>
+						<g id="US_OH_COUNTIES"></g>
+						<g id="US_HI_COUNTIES"></g>
+						<g id="US_ID_COUNTIES"></g>
+						<g id="US_IN_COUNTIES"></g>
+						<g id="US_KY_COUNTIES"></g>
+						<g id="US_MA_COUNTIES"></g>
+						<g id="US_MD_COUNTIES"></g>
+						<g id="US_ME_COUNTIES"></g>
+						<g id="US_MI_COUNTIES"></g>
+						<g id="US_MT_COUNTIES"></g>
+						<g id="US_NC_COUNTIES"></g>
+						<g id="US_ND_COUNTIES"></g>
+						<g id="US_NH_COUNTIES"></g>
+						<g id="US_NJ_COUNTIES"></g>
+						<g id="US_NM_COUNTIES"></g>
+						<g id="US_NY_COUNTIES"></g>
+						<g id="US_OK_COUNTIES"></g>
+						<g id="US_OR_COUNTIES"></g>
+						<g id="US_PA_COUNTIES"></g>
+						<g id="US_RI_COUNTIES"></g>
+						<g id="US_SD_COUNTIES"></g>
+						<g id="US_SC_COUNTIES"></g>
+						<g id="US_TN_COUNTIES"></g>
+						<g id="US_TX_COUNTIES"></g>
+						<g id="US_UT_COUNTIES"></g>
+						<g id="US_VA_COUNTIES"></g>
+						<g id="US_VT_COUNTIES"></g>
+						<g id="US_WA_COUNTIES"></g>
+						<g id="US_WI_COUNTIES"></g>
+						<g id="US_WV_COUNTIES"></g>
+						<g id="US_WY_COUNTIES"></g>
+					</g>
+					<g id="groupCityPoints">
+					</g>
+				</g>
+            </svg>
+        </div>
+    </div>
+</div>
+</body>
+</html>
