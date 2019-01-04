@@ -1,0 +1,518 @@
+﻿<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            .rails {
+                fill: none;
+                stroke-linejoin: round;
+                stroke-linecap: round;
+            }
+		    .state {
+			    pointer-events: all;
+			    stroke-opacity:0.4;
+			    stroke-width: .0125em;
+		    }
+		    .state-borders {
+			    fill: none;
+			    stroke: #fff;
+			    stroke-opacity:0.4;
+			    stroke-width: .0125em;
+			    stroke-linejoin: round;
+			    stroke-linecap: round;
+			    pointer-events: none;
+		    }
+		    .tooltip { 
+			    position: absolute;
+                width: min-content;
+                display: table;
+                background: #334b64;
+                padding: 10px;
+                box-shadow: 0px 0px 50px rgba(29, 80, 123, 0.3);			    color: #ffffff;
+			    font-family: Cinzel;
+                font-size:10px;
+			    pointer-events: none;
+			    z-index:9999;
+		    }
+
+        </style>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	    <script src="https://d3js.org/d3.v4.min.js"></script>
+	    <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+	    <script src="https://d3js.org/topojson.v2.min.js"></script>	
+    </head>
+    <body>
+        <svg id="svgUSMAP" width="960" height="600" xmlns="http://www.w3.org/2000/svg" xmlns:amcharts="http://amcharts.com/ammap" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1">
+        <defs>
+            <symbol id="p1">
+                <svg width="10" height="6" viewBox="0 0 601 601" xml:space="preserve" style="overflow:visible">
+                    <metadata id="metadata30">
+                    <rdf:RDF><cc:Work rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></metadata>
+                    <g transform="matrix(1.5625,0,0,1.5625,0.49999999,0.49999999)" style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none">
+                        <path d="M 192,0.003418 C 177.13184,14.054688 157.07227,22.669922 135,22.669922 112.92676,22.669922 92.868164,14.052246 78,0 L 0,80.771484 c 19.416016,14.393067 32,37.479006 32,63.504396 0,16.48779 -5.051758,31.79736 -13.69043,44.46289 C 6.793457,205.58789 0,226.05078 0,248 c 0,57.78711 46.680176,104.66992 104.39063,104.99805 33.27783,0 63.58496,11.61132 87.60937,31.00195 24.02344,-19.39063 54.33105,-31.00195 87.60937,-31.00195 C 337.31934,352.66992 384,305.78711 384,248 384,226.05078 377.20605,205.58789 365.69043,188.73877 357.05176,176.07324 352,160.76367 352,144.27588 352,118.25049 364.58398,95.164551 384,80.771484 L 306,0 c -14.86816,14.052246 -34.92676,22.669922 -57,22.669922 -22.07227,0 -42.13184,-8.615234 -57,-22.666504 z" style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+                        <path d="M 192,0.003418 C 177.13184,14.054688 157.07227,22.669922 135,22.669922 112.92676,22.669922 92.868164,14.052246 78,0 L 0,80.771484 c 19.416016,14.393067 32,37.479006 32,63.504396 0,16.48779 -5.051758,31.79736 -13.69043,44.46289 C 6.793457,205.58789 0,226.05078 0,248 c 0,57.78711 46.680176,104.66992 104.39063,104.99805 33.27783,0 63.58496,11.61132 87.60937,31.00195 24.02344,-19.39063 54.33105,-31.00195 87.60937,-31.00195 C 337.31934,352.66992 384,305.78711 384,248 384,226.05078 377.20605,205.58789 365.69043,188.73877 357.05176,176.07324 352,160.76367 352,144.27588 352,118.25049 364.58398,95.164551 384,80.771484 L 306,0 c -14.86816,14.052246 -34.92676,22.669922 -57,22.669922 -22.07227,0 -42.13184,-8.615234 -57,-22.666504 z" style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+                    </g>
+                    <g transform="matrix(1.5625,0,0,1.5625,0.49999999,0.49999999)" >
+                        <path d="m 303.87207,28.027344 50.36621,52.155761 C 339.74805,97.525391 331,119.88574 331,144.27588 c 0,20.84326 6.40527,40.26269 17.34766,56.3042 C 357.56543,214.06836 363,230.43164 363,248 c 0,46.22949 -37.34473,83.73633 -83.50977,83.99902 C 247.12109,332.02148 217.1582,341.61621 192,358.06055 166.81152,341.5957 136.80469,331.99805 104.39063,331.99805 58.279785,331.67285 21,294.19043 21,248 21,230.43262 26.43457,214.06836 35.652344,200.58008 46.594238,184.53857 53,165.11914 53,144.27588 53,119.88525 44.251953,97.525391 29.761719,80.183106 L 80.12793,28.027344 C 96.056641,37.936523 114.87402,43.669922 135,43.669922 c 21.02832,0 40.62988,-6.258789 57,-17 16.37012,10.741211 35.97168,17 57,17 20.12598,0 38.94336,-5.733399 54.87207,-15.642578 z M 249,31.669922 c 21.25488,0 40.83789,-7.217774 56.41211,-19.322266 l 65.40332,67.726563 C 353.70605,96.120117 343,118.94775 343,144.27588 c 0,18.35449 5.63184,35.42529 15.25781,49.5376 C 368.78906,209.22266 375,227.92773 375,248 c 0,52.83398 -42.67969,95.69922 -95.44141,95.99805 C 246.71582,344.00977 216.57617,354.6543 192,372.65039 167.41016,354.64551 137.25244,343.99805 104.39062,343.99805 51.651367,343.67187 9,300.81641 9,248 9,227.92773 15.210938,209.22266 25.742187,193.81348 35.368164,179.70117 41,162.63037 41,144.27588 41,118.94775 30.293457,96.120117 13.18457,80.074219 L 78.587891,12.347656 C 94.162109,24.452148 113.74512,31.669922 135,31.669922 c 21.52197,0 41.33105,-7.398926 57,-19.780273 15.66895,12.381347 35.47754,19.780273 57,19.780273 z" style="fill-rule:evenodd" />
+                        <text font-family="monospace" font-weight="900" text-anchor="middle"></text>
+                    </g>
+                    <g transform="translate(0.49999999,0.49999999)" style="font-size:111.94029999px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px; text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Roadgeek 2005 Series E;">
+                        <path d="m 294.76592,147.90112 c -7e-5,4.62689 -0.74634,8.88062 -2.23881,12.76119 -1.4926,3.80599 -3.58215,7.12688 -6.26865,9.96269 -2.68663,2.7612 -5.89558,4.92538 -9.62687,6.49254 -3.73139,1.56716 -7.79855,2.35074 -12.20149,2.35074 -4.40302,0 -8.47018,-0.78358 -12.2015,-2.35074 -3.65674,-1.56716 -6.82837,-3.73134 -9.51492,-6.49254 -2.68658,-2.83581 -4.77613,-6.1567 -6.26866,-9.96269 -1.49255,-3.88057 -2.23881,-8.1343 -2.2388,-12.76119 l 0,-44.77612 13.43283,0 0,44.77612 c -2e-5,2.23883 0.14923,4.06719 0.44776,5.48507 0.37311,1.34331 1.00744,2.76122 1.90299,4.25374 1.49251,2.4627 3.50743,4.44031 6.04477,5.93283 2.53728,1.49255 5.33579,2.23882 8.39553,2.23881 3.05966,1e-5 5.85816,-0.74626 8.39552,-2.23881 2.61189,-1.49252 4.66413,-3.47013 6.15672,-5.93283 0.89546,-1.49252 1.49248,-2.94774 1.79104,-4.36568 0.37308,-1.49251 0.55965,-3.28355 0.5597,-5.37313 l 0,-44.77612 13.43284,0 0,44.77612 0,0"/>
+                        <path d="m 370.30813,156.29664 c -7e-5,7.61196 -3.50753,13.47016 -10.52239,17.57463 -2.61199,1.64179 -5.55975,2.91045 -8.84328,3.80597 -3.28363,0.82089 -6.67915,1.23134 -10.18657,1.23134 -6.49257,0 -12.23883,-1.15671 -17.23881,-3.47015 -4.92539,-2.38805 -9.51493,-6.04476 -13.76865,-10.97015 l 10.74626,-8.39552 c 2.83581,3.2836 5.82088,5.67166 8.95523,7.16418 3.1343,1.49255 6.82832,2.23882 11.08209,2.23881 4.77608,1e-5 8.69398,-0.89551 11.75373,-2.68657 3.05965,-1.86566 4.5895,-4.2164 4.58955,-7.05224 -5e-5,-2.98505 -1.56721,-5.26117 -4.70149,-6.82836 -1.34333,-0.52236 -2.76124,-1.04474 -4.25373,-1.56716 -1.41796,-0.52236 -2.98512,-0.97012 -4.7015,-1.34329 l -3.47014,-1.00746 -3.47015,-0.78358 -3.58209,-1.1194 c -3.88062,-0.89549 -6.94032,-1.86564 -9.17911,-2.91045 -2.16419,-1.11937 -4.02986,-2.57459 -5.59701,-4.36567 -1.56718,-1.71638 -2.76121,-3.65667 -3.58209,-5.8209 -0.74628,-2.16413 -1.11941,-4.44024 -1.11941,-6.82836 0,-3.13427 0.63432,-5.97009 1.90299,-8.50746 1.26864,-2.53725 3.02237,-4.70142 5.26119,-6.49254 2.23879,-1.8656 4.92536,-3.28351 8.05971,-4.25373 3.20892,-1.0447 6.71638,-1.56709 10.52238,-1.56716 5.59698,7e-5 10.6716,0.93291 15.22388,2.7985 4.62682,1.86575 8.84323,4.77619 12.64926,8.73135 l -9.96269,8.95522 c -4.70154,-4.92531 -10.67168,-7.388 -17.91045,-7.38806 -3.806,6e-5 -6.79107,0.70902 -8.95522,2.12687 -2.08958,1.34334 -3.13435,3.20901 -3.13433,5.59701 -2e-5,1.04483 0.18655,1.97767 0.5597,2.79851 0.37311,0.74632 1.00744,1.45527 1.90299,2.12687 0.89549,0.59706 2.08952,1.15676 3.58209,1.6791 1.56713,0.52244 3.50743,1.04482 5.82089,1.56716 4.99996,1.04483 9.17906,2.0896 12.53732,3.13433 3.35816,1.04482 6.08203,2.0896 8.17164,3.13433 3.35815,1.71646 6.0074,4.25377 7.94776,7.61194 1.94023,3.28361 2.91038,6.97764 2.91045,11.08209" />
+                    </g>
+                </svg>
+            </symbol>
+        </defs>
+        <g id="groupMapAll">
+            <g id="grpStates"></g>
+            <g id="grpRailNames">
+                <g></g>
+            </g>
+            <g id="grpRails">
+                <g></g>
+            </g>
+        </g>
+    </svg>
+    </body>
+</html>
+<script>
+    let gActiveState    = null;
+    let gProjection     = null;
+    let gStates         = {};
+	let gGeoPath		= {};
+	let gWidth			= 960,
+		gHeight			= 600;
+    let gTooltip        = null;
+    let gIsDragging     = false;
+    function fxReset(sState) {
+		gTooltip.style("opacity", 0);
+        var grpRails = d3.select("#grpRails");
+		grpRails.selectAll('path').remove();
+        var grpRailNames = d3.select("#grpRailNames");
+		grpRailNames.selectAll('text').remove();
+		grpRailNames.selectAll('use').remove();
+    	gActiveState	= d3.select(null);
+        var g = d3.select("#groupMapAll")
+        g.transition()
+		.duration(750)
+		.style("stroke-width", "1.5px")
+		.attr("transform", "");
+	}
+    function onMouseDown(obj, ctrl) {
+        if (gIsDragging) {
+            d3.event.preventDefault();
+        }
+        var sState = gStates[obj.id];
+		if (gActiveState && gActiveState.node() === obj){
+			return fxReset(sState);
+		} else if (gActiveState && gActiveState.node() && gActiveState.node().id != undefined){
+            var grpRails = d3.select("#grpRails");
+		    grpRails.selectAll('path').remove();
+            var grpRailNames = d3.select("#grpRailNames");
+		    grpRailNames.selectAll('text').remove();
+		    grpRailNames.selectAll('use').remove();
+		}
+		var sStateFIP	= obj.id.substr(0,2);
+		gActiveState = d3.select(obj);
+		var bounds	= gGeoPath.bounds(obj),
+		dx			= bounds[1][0] - bounds[0][0],
+		dy			= bounds[1][1] - bounds[0][1],
+		x			= (bounds[0][0] + bounds[1][0]) / 2,
+		y			= (bounds[0][1] + bounds[1][1]) / 2,
+		scale		= .9/ Math.max(dx / gWidth, dy / gHeight),
+		translate	= [(gWidth/2) - (scale * x), (gHeight/2) - (scale * y)];
+        displayRailByState(sStateFIP, ctrl);
+        //displayRails(sStateFIP, ctrl);
+        //displayRailLabels(sStateFIP);
+        var g = d3.select("#groupMapAll");
+		g.transition()
+		.duration(750)
+		.style("stroke-width", 1.5 / scale + "px")
+		.attr("transform", "translate(" + translate + ")scale(" + scale + ")");
+	}
+    function displayRails(sState, ctrl) {
+        var grpRails = d3.select("#grpRails");
+		grpRails.selectAll('path').remove();
+        //d3.json(sState + "-rails.json", function (error, usrails) {
+        //d3.json(sState + "-railway.json", function (error, usrails) {
+        d3.json(sState + "-RR.json", function (error, usrails) {
+            if (error) throw error;
+            var p = d3.geoPath().projection(gProjection);
+            var crect	= ctrl.getBoundingClientRect();
+            grpRails.selectAll("g")
+            .data(usrails.features)
+            .enter()
+            .filter(function (d) {
+				if(d.properties.FULLNAME == "" || d.properties.FULLNAME == "XXXX" || d.properties.FULLNAME == "USG"){
+					return false;
+				} else{
+					return true;
+				}
+			})
+            .append('path')
+			.style("stroke", "rgb(0,0,0)")
+            .attr('fill','none')
+            .attr('stroke-width', '.028em')
+            .attr('stroke-linejoin', 'round')
+            .attr('stroke-opacity', '1')
+            .attr("d", p)
+            .on("mouseover", function(d) {    
+			    if(d.properties.FULLNAME != ""){
+                    d3.select(this).style("stroke-width", ".030em");
+        			d3.select(this).style("stroke", "rgb(255,0,0)")
+                    gTooltip.html(d.properties.FULLNAME);
+				    gTooltip.transition()    
+				    .duration(30)
+				    .style("opacity", .9)
+				    .style("left", (d3.event.pageX + 2) + "px")
+				    .style("top", function(){
+    					if((d3.event.pageY-9) < crect.y){
+						    return ((d3.event.pageY + 9) + "px");
+					    } else {
+						    return ((d3.event.pageY - 9) + "px");
+					    }
+				    })
+			    } else{
+                    d3.select(this).style("stroke-width", ".028em");
+        			d3.select(this).style("stroke", "rgb(0,0,0)")
+                    gTooltip.style("opacity", 0);
+			    }
+		    })          
+		    .on("mouseout", function(d) {   
+                d3.select(this).style("stroke-width", ".028em");
+       			d3.select(this).style("stroke", "rgb(0,0,0)")
+                gTooltip.style("opacity", 0); 
+		    });
+            /*for (var idx in usrails.features) {
+                var mid_coords = {
+                    lng: p.centroid(usrails.features[idx].geometry)[0] - ((idx % 2) == 0 ? 5 : .5),
+                    lat: p.centroid(usrails.features[idx].geometry)[1] - ((idx % 2) == 0 ? 1 : 0.5)
+                }
+                var sInter = usrails.features[idx].properties.FULLNAME;
+                if (sInter == "" || sInter == "XXXX" || sInter == "USG") {
+                    continue;
+                }
+                grpRailNames.selectAll("g")
+                    .append("text")
+                    .attr("x", function (d) {
+                        return mid_coords.lng;
+                    })
+                    .attr("y", function (d) {
+                        return mid_coords.lat;
+                    })
+                    .text(function (d) {
+                        return sInter;
+                    })
+                    .attr('font-size', '4pt')
+                    .attr('font-family', "'Droid Sans Mono', monospace")
+                    .attr("fill", "rgb(0,0,0)");
+            }*/
+        });        
+    }
+    function displayRailLabels(sState) {
+        var grpRailNames = d3.select("#grpRailNames");
+		grpRailNames.selectAll('text').remove();
+		grpRailNames.selectAll('use').remove();
+        d3.json(sState + "-RR.json", function (error, usrails) {
+        //d3.json(sState + "-rails-labels.json", function (error, usrails) {
+            if (error) throw error;
+            var p = d3.geoPath().projection(gProjection);
+            for (var idx in usrails.features) {
+                var mid_coords = {
+                    lng: p.centroid(usrails.features[idx].geometry)[0] - ((idx % 2) == 0 ? 5 : .5),
+                    lat: p.centroid(usrails.features[idx].geometry)[1] - ((idx % 2) == 0 ? 1 : 0.5)
+                }
+                var sInter = usrails.features[idx].properties.FULLNAME;
+                grpRailNames.selectAll("g")
+                    .append("text")
+                    .attr("x", function (d) {
+                        return mid_coords.lng;
+                    })
+                    .attr("y", function (d) {
+                        return mid_coords.lat;
+                    })
+                    .text(function (d) {
+                        return sInter;
+                    })
+                    .attr('font-size', '2pt')
+                    .attr('font-family', "'Droid Sans Mono', monospace")
+                    .attr("fill", "rgb(0,0,0)");
+            }
+        });
+    }
+    function displayRailsAll() {
+        //var grpRails = d3.select("#grpRails");
+        var grpRails = d3.select("#grpRailNames");
+        //d3.json("us-rails.json", function (error, usrails) {
+        //d3.json("us-national-rails.json", function (error, usrails) {
+        //d3.json("usa-rr.json", function (error, usrails) {
+        d3.json("usa-cta-rr.json", function (error, usrails) {
+            if (error) throw error;
+            var p = d3.geoPath().projection(gProjection);
+            grpRails.selectAll("g")
+                .data(usrails.features)
+                .enter()
+                .append('path')
+				.style("stroke", function(d) {
+                    return '#464646';
+				})
+                .attr('fill','none')
+                .attr('stroke-width','.015em')
+                .attr('stroke-opacity','.90')
+                .attr("d", p)
+                .on("mouseover", function(d) {    
+			        if(d.properties.FULLNAME != ""){
+                        d3.select(this).style("stroke-width", ".016em");
+        			    d3.select(this).style("stroke", "rgb(255,0,0)")
+                        gTooltip.html(d.properties.FULLNAME);
+				        gTooltip.transition()    
+				        .duration(30)
+				        .style("opacity", .9)
+				        .style("left", (d3.event.pageX) + "px")
+				        .style("top", function(){
+                            return ((d3.event.pageY - 9) + "px");
+				        })
+			        } else{
+                        d3.select(this).style("stroke-width", ".015em");
+        			    d3.select(this).style("stroke", "#464646")
+                        gTooltip.style("opacity", 0);
+			        }
+		        })          
+		        .on("mouseout", function(d) {   
+                    d3.select(this).style("stroke-width", ".015em");
+       			    d3.select(this).style("stroke", "#464646")
+                    gTooltip.style("opacity", 0); 
+		        });
+        });
+    }
+    function displayRailByState(sState, ctrl) {
+        var grpRails = d3.select("#grpRails");
+        var grpRailNames = d3.select("#grpRailNames");
+        d3.json(sState + "-cta-rr.json", function (error, usrails) {
+            if (error) throw error;
+            var p = d3.geoPath().projection(gProjection);
+            grpRails.selectAll("g")
+                .data(usrails.labels)
+                .enter()
+                .append('path')
+                .style("stroke", function (d) {
+                    return '#464646';
+                })
+                .attr('fill', 'none')
+                .attr('stroke-width', '.015em')
+                .attr('stroke-opacity', '.90')
+                .attr("d", p)
+                .on("mouseover", function(d) {    
+			        if(d.properties.FULLNAME != ""){
+                        d3.select(this).style("stroke-width", ".016em");
+        			    d3.select(this).style("stroke", "rgb(255,0,0)")
+                        gTooltip.html(d.properties.FULLNAME);
+				        gTooltip.transition()    
+				        .duration(30)
+				        .style("opacity", .9)
+				        .style("left", (d3.event.pageX) + "px")
+				        .style("top", function(){
+                            return ((d3.event.pageY - 9) + "px");
+				        })
+			        } else{
+                        d3.select(this).style("stroke-width", ".015em");
+        			    d3.select(this).style("stroke", "#464646")
+                        gTooltip.style("opacity", 0);
+			        }
+		        })          
+		        .on("mouseout", function(d) {   
+                    d3.select(this).style("stroke-width", ".015em");
+       			    d3.select(this).style("stroke", "#464646")
+                    gTooltip.style("opacity", 0); 
+		        });
+            for (var idx in usrails.labels) {
+                var sInter = usrails.labels[idx].properties.FULLNAME;
+                var mid_coords = {
+                    lng: p.centroid(usrails.labels[idx].geometry)[0],
+                    lat: p.centroid(usrails.labels[idx].geometry)[1]
+                };
+                grpRailNames.selectAll("g")
+                    .append("text")
+                    .attr("x", function (d) {
+                        return mid_coords.lng;
+                    })
+                    .attr("y", function (d) {
+                        return mid_coords.lat;
+                    })
+                    .text(function (d) {
+                        return sInter;
+                    })
+                    .attr('font-size', '2pt')
+                    .attr('font-family', "'Droid Sans Mono', monospace")
+                    .attr("fill", "rgb(0,0,0)");
+                var bnd = d3.geoPath().bounds(usrails.labels[idx]);
+                var low_coords = {
+                    lng: gProjection([bnd[0][0], bnd[0][1]])[0],
+                    lat: gProjection([bnd[0][0], bnd[0][1]])[1]
+                };
+                //console.log(bnd[0][0] + "<=>" + bnd[0][1] + "<=>" + bnd[1][0] + "<=>" + bnd[1][1] + " --END-- " + JSON.stringify(low_coords));
+                /*if (low_coords.lng != mid_coords.lng && low_coords.lat != mid_coords.lat) {
+                    grpRailNames.selectAll("g")
+                    .append("text")
+                    .attr("x", function (d) {
+                        return low_coords.lng;
+                    })
+                    .attr("y", function (d) {
+                        return low_coords.lat;
+                    })
+                    .text(function (d) {
+                        return sInter;
+                    })
+                    .attr('font-size', '2pt')
+                    .attr('font-family', "'Droid Sans Mono', monospace")
+                    .attr("fill", "rgb(0,0,0)");
+                }
+                var max_coords = {
+                    lng: gProjection([bnd[1][0], bnd[1][1]])[0],
+                    lat: gProjection([bnd[1][0], bnd[1][1]])[1]
+                };
+                if (max_coords.lng != mid_coords.lng && max_coords.lat != mid_coords.lat) {
+                    grpRailNames.selectAll("g")
+                    .append("text")
+                    .attr("x", function (d) {
+                        return max_coords.lng;
+                    })
+                    .attr("y", function (d) {
+                        return max_coords.lat;
+                    })
+                    .text(function (d) {
+                        return sInter;
+                    })
+                    .attr('font-size', '2pt')
+                    .attr('font-family', "'Droid Sans Mono', monospace")
+                    .attr("fill", "rgb(0,0,0)");
+                }*/
+            }
+            
+        });
+    }
+    function fxZoom() {
+        d3.select('#groupMapAll')
+        .attr('transform', 'translate(' + d3.event.transform.x + ',' + d3.event.transform.y + ') scale(' + d3.event.transform.k + ')');
+    }
+    function fxDragStarted(d) {
+        gIsDragging = true;
+    }
+    function fxDragged(d) {
+        gIsDragging = true;
+    }
+    function fxDragEnded(d) {
+        gIsDragging = false;
+    }
+
+    gStates["01"] = "AL";
+	gStates["02"] = "AK";
+	gStates["05"] = "AR";
+	gStates["04"] = "AZ";
+	gStates["06"] = "CA";
+	gStates["08"] = "CO";
+	gStates["09"] = "CT";
+	gStates["10"] = "DE";
+	gStates["11"] = "DC";
+	gStates["12"] = "FL";
+	gStates["13"] = "GA";
+	gStates["15"] = "HI";
+	gStates["19"] = "IA";
+	gStates["16"] = "ID";
+	gStates["17"] = "IL";
+	gStates["18"] = "IN";
+	gStates["20"] = "KS";
+	gStates["21"] = "KY";
+	gStates["22"] = "LA";
+	gStates["24"] = "MD";
+	gStates["23"] = "ME";
+	gStates["25"] = "MA";
+	gStates["26"] = "MI";
+	gStates["27"] = "MN";
+	gStates["29"] = "MO";
+	gStates["28"] = "MS";
+	gStates["30"] = "MT";
+	gStates["37"] = "NC";
+	gStates["38"] = "ND";
+	gStates["31"] = "NE";
+	gStates["33"] = "NH";
+	gStates["34"] = "NJ";
+	gStates["35"] = "NM";
+	gStates["32"] = "NV";
+	gStates["36"] = "NY";
+	gStates["39"] = "OH";
+	gStates["40"] = "OK";
+	gStates["41"] = "OR";
+	gStates["42"] = "PA";
+	gStates["44"] = "RI";
+	gStates["45"] = "SC";
+	gStates["46"] = "SD";
+	gStates["47"] = "TN";
+	gStates["48"] = "TX";
+	gStates["49"] = "UT";
+	gStates["51"] = "VA";
+	gStates["50"] = "VT";
+	gStates["53"] = "WA";
+	gStates["55"] = "WI";
+	gStates["54"] = "WV";
+	gStates["56"] = "WY";
+
+	gProjection = d3.geoAlbersUsa();//d3.geoAlbers();
+	//d3 projection anticipates a 960 x 500
+	var scale = d3.geoAlbers().scale(); // get the default scale
+	gProjection.scale(scale * 1.2)		// adjust for 600 pixels tall
+	.translate([gWidth/2,gHeight/2]);		// adjust for 600 pixels tall here too.
+    gGeoPath = d3.geoPath();//.projection(projection);
+
+
+    var svg = d3.select("svg")
+        .attr('width', gWidth)
+        .attr('height', gHeight);
+    var zoom = d3.zoom()
+        .scaleExtent([1, 8])
+        .on('zoom', fxZoom);
+    d3.select('#groupMapAll').call(zoom);
+    d3.select('#groupMapAll').call(d3.drag()
+        .on("start", fxDragStarted)
+        .on("drag", fxDragged)
+        .on("end", fxDragEnded));
+    var grpStates = d3.select("#grpStates");
+    var grpRails = d3.select("#grpRails");
+    var grpRailNames = d3.select("#grpRailNames");
+    d3.json("us-states-10.json", function (error, us) {
+    	if (error){
+			alert(error);
+		}
+        grpStates.selectAll("g")
+            .data(topojson.feature(us, us.objects.states).features)
+            .enter()
+            .append("path")
+			.attr("id", function(d){
+				return "US_" + gStates[d.id];
+			})
+            .attr("d", gGeoPath)
+            .attr("class", "state")
+            .style("stroke", "#fff")
+            .style("stroke-width", "1")
+            .style("fill", function (d) {
+                var color = "#" + ((1 << 24) * Math.random() | 0).toString(16);
+                var percent = 2;
+                var f = parseInt(color.slice(1), 16), t = percent < 0 ? 0 : 255, p = percent < 0 ? percent * -1 : percent, R = f >> 16, G = f >> 8 & 0x00FF, B = f & 0x0000FF;
+                return "#" + (0x1000000 + (Math.round((t - R) * p) + R) * 0x10000 + (Math.round((t - G) * p) + G) * 0x100 + (Math.round((t - B) * p) + B)).toString(16).slice(1);
+            })
+            .style("fill-opacity", ".85")
+            .on("mousedown", function (d) {
+                onMouseDown(d, $("#US_" + gStates[d.id])[0]);
+            });
+		grpStates.append("path")
+			.attr("class", "state-borders")
+			.attr("d", gGeoPath(topojson.mesh(us, us.objects.states, function(a, b) { return a !== b; })));
+    });
+	$(document).ready(function(){
+		d3.select("#svgUSMAP").attr("width", gWidth).attr("height", gHeight);
+		gTooltip = d3.select("body").append("div")
+		.attr("class", "tooltip")       
+		.style("opacity", 0);
+        //displayRailsAll();
+	});
+</script>
