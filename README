@@ -1,4 +1,4 @@
-Data was obtained from:
+Road Data was obtained from:
           https://www.census.gov/cgi-bin/geo/shapefiles/index.php?year=2018&layergroup=Roads
           
 Files are named :
@@ -13,4 +13,15 @@ The maps load a tad slower than MaPBox, and I noticed the data from Tiger/Line s
 lot of difference in names and coordinates than MapBox; look at Alabama and Mississippi's I-22, and you will see a big chucnk of highway missing. I tested this prior to simplifying the geometries, and it yielded the same result.
 
 What I did to remedy this is change US Hwy 78 to I- 22 US Hwy 78
+
+Railroad Data was obtained from:
+		https://cta.ornl.gov/transnet/RailRoads.html
+
+Files are named:
+	StateFipsCode-CTA-RR.json
+
+The file contains features and labels, combined. I could not find a way to link rails continuously unless grouping by name. According to documentation, the JA and JB fields,
+should point to a daisy chain like connecting points. Similarily, when I tried to get 
+data from Tiger/Line, I used a similar stratgey, the lines look ok, like on other maps; but to get a continuous legend, not so easy.
+
 
