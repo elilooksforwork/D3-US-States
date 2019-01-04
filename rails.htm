@@ -325,7 +325,7 @@
        			    d3.select(this).style("stroke", "#464646")
                     gTooltip.style("opacity", 0); 
 		        });
-            for (var idx in usrails.labels) {
+            /*for (var idx in usrails.labels) {
                 var sInter = usrails.labels[idx].properties.FULLNAME;
                 var mid_coords = {
                     lng: p.centroid(usrails.labels[idx].geometry)[0],
@@ -349,7 +349,7 @@
                 var low_coords = {
                     lng: gProjection([bnd[0][0], bnd[0][1]])[0],
                     lat: gProjection([bnd[0][0], bnd[0][1]])[1]
-                };
+                };*/
                 //console.log(bnd[0][0] + "<=>" + bnd[0][1] + "<=>" + bnd[1][0] + "<=>" + bnd[1][1] + " --END-- " + JSON.stringify(low_coords));
                 /*if (low_coords.lng != mid_coords.lng && low_coords.lat != mid_coords.lat) {
                     grpRailNames.selectAll("g")
@@ -387,7 +387,7 @@
                     .attr('font-family', "'Droid Sans Mono', monospace")
                     .attr("fill", "rgb(0,0,0)");
                 }*/
-            }
+            //}
             
         });
     }
